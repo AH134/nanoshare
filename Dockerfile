@@ -22,6 +22,8 @@ RUN addgroup -S appuser \
 
 COPY --from=builder --chown=appuser:appuser /app/nanoshare /app/nanoshare
 
+RUN mkdir -p /app/data && chown appuser:appuser /app/data
+
 USER appuser
 
 EXPOSE 8080
