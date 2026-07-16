@@ -7,17 +7,30 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func New(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", path)
+type DB struct {
+	conn   *sql.DB
+	dbPath string
+}
+
+func New(path string) (*DB, error) {
+	conn, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("opening db: %w", err)
 	}
 
-	db.SetMaxOpenConns(1)
+	conn.SetMaxOpenConns(1)
 
-	if err := db.Ping(); err != nil {
+	if err := conn.Ping(); err != nil {
 		return nil, fmt.Errorf("pinging db: %w", err)
 	}
 
-	return db, nil
+	return &DB{conn: conn}, nil
+}
+
+func (d *DB) Ping() error {
+	return d.conn.Ping()
+}
+
+func (d *DB) Close() error {
+	return d.conn.Close()
 }

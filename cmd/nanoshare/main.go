@@ -15,6 +15,8 @@ func main() {
 	}
 	defer db.Close()
 
+	db.SeedAdmin()
+
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -23,12 +25,11 @@ func main() {
 	})
 
 	router.HandleFunc("GET /health/db", func(w http.ResponseWriter, r *http.Request) {
-		var result int
-		if err := db.QueryRow("SELECT 1").Scan(&result); err != nil {
+		if err := db.Ping(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Fprintf(w, "db says: %d\n", result)
+		w.Write([]byte(`{"status": "ok"}`))
 	})
 
 	srv := &http.Server{
