@@ -8,8 +8,7 @@ import (
 )
 
 type DB struct {
-	conn   *sql.DB
-	dbPath string
+	conn *sql.DB
 }
 
 func New(path string) (*DB, error) {
@@ -18,13 +17,17 @@ func New(path string) (*DB, error) {
 		return nil, fmt.Errorf("opening db: %w", err)
 	}
 
-	conn.SetMaxOpenConns(1)
+	// conn.SetMaxOpenConns(1)
 
 	if err := conn.Ping(); err != nil {
 		return nil, fmt.Errorf("pinging db: %w", err)
 	}
 
 	return &DB{conn: conn}, nil
+}
+
+func (d *DB) Conn() *sql.DB {
+	return d.conn
 }
 
 func (d *DB) Ping() error {
