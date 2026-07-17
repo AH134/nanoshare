@@ -40,7 +40,7 @@ func (a *Application) Mount() http.Handler {
 
 	// routes
 	r.HandleFunc("GET /api/health", handler.HealthCheck)
-
+	r.Handle("GET /api/me", authMiddleware.RequireAuth(http.HandlerFunc(authHandler.Me)))
 	r.HandleFunc("POST /api/auth/login", authHandler.Login)
 	r.Handle("POST /api/auth/logout", authMiddleware.RequireAuth(http.HandlerFunc(authHandler.Logout)))
 

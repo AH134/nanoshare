@@ -76,3 +76,13 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
+	userId := h.sessionManager.GetInt(r.Context(), session.UserIdKey)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]int{"userId": userId}); err != nil {
+		log.Printf("me: failed to encode response: %v", err)
+	}
+
+}
