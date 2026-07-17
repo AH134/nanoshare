@@ -9,10 +9,10 @@ dev-frontend:
 	npm --prefix ui run dev
 
 migrate-up:
-	goose -dir migrations sqlite3 ./data/nanoshare.db up
+	goose -dir ./internal/database/migrations sqlite3 ./data/nanoshare.db up
 
 migrate-down:
-	goose -dir migrations sqlite3 ./data/nanoshare.db down
+	goose -dir ./internal/database/migrations sqlite3 ./data/nanoshare.db down
 
 create-admin:
 	go run ./cmd/nanoshare/createadmin/main.go --username=$(ADMIN_USERNAME) --password=$(ADMIN_PASSWORD)
