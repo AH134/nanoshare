@@ -33,3 +33,6 @@ go.work.sum
 
 # Golang air
 air
+
+# db data
+data/

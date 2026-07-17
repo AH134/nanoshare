@@ -9,11 +9,10 @@
   "envVarValues": {},
   "git": false,
   "install": true,
-  "routerOnly": false,
+  "routerOnly": true,
   "version": 1,
   "framework": "react",
   "chosenAddOns": [
-    "biome",
-    "tanstack-query"
+    "biome"
   ]
 }
