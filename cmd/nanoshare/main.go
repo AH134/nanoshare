@@ -20,13 +20,20 @@ func main() {
 	}
 	defer db.Close()
 
+	if err := database.RunMigrations(db.Conn()); err != nil {
+		log.Fatal(err)
+	}
+
+	userRepo := database.NewUserRepository(db)
+	if err := userRepo.SeedAdmin(); err != nil {
+		log.Fatal(err)
+	}
+
 	sessionManager := session.New(db.Conn())
 	sqlite3store.NewWithCleanupInterval(db.Conn(), 5*time.Minute)
 
 	router := http.NewServeMux()
 
-	userRepo := database.NewUserRepository(db)
-	userRepo.SeedAdmin()
 	authHandler := handlers.NewAuthHandler(userRepo, sessionManager)
 	authMW := middleware.NewAuthMiddleware(sessionManager)
 
