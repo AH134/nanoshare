@@ -6,13 +6,13 @@ import (
 )
 
 type UploadedFile struct {
-	ID               int
-	OwnerID          int
-	OriginalFilename string
-	StorageKey       string
-	SizeBytes        int64
-	MimeType         string
-	UploadedAt       time.Time
+	ID               int       `json:"id"`
+	OwnerID          int       `json:"-"`
+	OriginalFilename string    `json:"originalFilename"`
+	StorageKey       string    `json:"-"`
+	SizeBytes        int64     `json:"sizeBytes"`
+	MimeType         string    `json:"mimeType"`
+	UploadedAt       time.Time `json:"uploadedAt"`
 }
 
 type FileRepository struct {
@@ -57,7 +57,7 @@ func (r *FileRepository) GetByID(id int) (*UploadedFile, error) {
 	return &file, nil
 }
 
-func (r *FileRepository) GetByOwnerID(ownerID int) ([]*UploadedFile, error) {
+func (r *FileRepository) GetAllByOwnerID(ownerID int) ([]*UploadedFile, error) {
 	query := "SELECT id, owner_id, original_filename, storage_key, size_bytes, mime_type, uploaded_at FROM files WHERE owner_id = ?"
 
 	rows, err := r.db.Conn().Query(query, ownerID)

@@ -56,6 +56,7 @@ func (a *Application) Mount() http.Handler {
 	r.HandleFunc("POST /api/auth/login", authHandler.Login)
 	r.Handle("POST /api/auth/logout", requireAuth(http.HandlerFunc(authHandler.Logout)))
 
+	r.Handle("GET /api/files", requireAuth(http.HandlerFunc(storageHandler.ListFiles)))
 	r.Handle("POST /api/files", requireAuth(http.HandlerFunc(storageHandler.Upload)))
 
 	return mwChain(r)

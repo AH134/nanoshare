@@ -3,6 +3,7 @@ package handler
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -91,4 +92,24 @@ func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *StorageHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
+	userID := h.sessionManager.GetInt(r.Context(), session.UserIDKey)
+
+	files, err := h.files.GetAllByOwnerID(userID)
+	if err != nil {
+		http.Error(w, "failed to fetch all files", http.StatusInternalServerError)
+		return
+	}
+
+	if files == nil {
+		files = make([]*database.UploadedFile, 0)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(files); err != nil {
+		http.Error(w, "failed to fetch all files", http.StatusInternalServerError)
+		return
+	}
 }
