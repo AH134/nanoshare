@@ -30,7 +30,7 @@ func NewStorageHandler(files *database.FileRepository, sessionManager *scs.Sessi
 }
 
 func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
-	userID := h.sessionManager.GetInt(r.Context(), session.UserIDKey)
+	userID := h.sessionManager.GetInt(r.Context(), session.DefaultUserIDKey)
 
 	// limit memory usage to 32mb
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
@@ -81,7 +81,7 @@ func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *StorageHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
-	userID := h.sessionManager.GetInt(r.Context(), session.UserIDKey)
+	userID := h.sessionManager.GetInt(r.Context(), session.DefaultUserIDKey)
 
 	files, err := h.files.GetAllByOwnerID(userID)
 	if err != nil {

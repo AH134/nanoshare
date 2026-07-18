@@ -6,6 +6,8 @@ import (
 	"fmt"
 )
 
+const DefaultLength = 32
+
 func Generate(length int) (string, error) {
 	key := make([]byte, length)
 	if _, err := rand.Read(key); err != nil {
