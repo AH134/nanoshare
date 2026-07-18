@@ -36,22 +36,26 @@ func (a *Application) Mount() http.Handler {
 	authHandler := handler.NewAuthHandler(a.userRepo, a.sessionManager)
 
 	// middlewares
-	authMiddleware := middleware.NewAuthMiddleware(a.sessionManager)
+	mwChain := middleware.Chain(
+		middleware.Logging,
+		a.sessionManager.LoadAndSave,
+	)
+	requireAuth := middleware.RequireAuth(a.sessionManager)
 
 	// routes
 	r.HandleFunc("GET /api/health", handler.HealthCheck)
-	r.Handle("GET /api/me", authMiddleware.RequireAuth(http.HandlerFunc(authHandler.Me)))
+	r.Handle("GET /api/me", requireAuth(http.HandlerFunc(authHandler.Me)))
 	r.HandleFunc("POST /api/auth/login", authHandler.Login)
-	r.Handle("POST /api/auth/logout", authMiddleware.RequireAuth(http.HandlerFunc(authHandler.Logout)))
+	r.Handle("POST /api/auth/logout", requireAuth(http.HandlerFunc(authHandler.Logout)))
 
-	return r
+	return mwChain(r)
 }
 
 func (a *Application) Run(h http.Handler) error {
 	addr := fmt.Sprintf(":%s", a.config.Port)
 	srv := &http.Server{
 		Addr:         addr,
-		Handler:      a.sessionManager.LoadAndSave(h),
+		Handler:      h,
 		WriteTimeout: time.Second * 30,
 		ReadTimeout:  time.Second * 10,
 		IdleTimeout:  time.Minute,
