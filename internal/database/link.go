@@ -26,7 +26,7 @@ type Link struct {
 	MaxDownloads  Nullable[int64]     `json:"maxDownloads"`
 	DownloadCount int                 `json:"downloadCount"`
 	CreatedAt     time.Time           `json:"createdAt"`
-	ExpiresAt     time.Time           `json:"expiresAt"`
+	ExpiresAt     Nullable[time.Time] `json:"expiresAt"`
 	RevokedAt     Nullable[time.Time] `json:"revokedAt"`
 }
 

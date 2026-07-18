@@ -6,7 +6,7 @@ CREATE TABLE links (
     max_downloads INTEGER,
     download_count INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL,
+    expires_at DATETIME,
     revoked_at DATETIME
 );
 
