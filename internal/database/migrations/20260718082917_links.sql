@@ -1,0 +1,8 @@
+-- +goose Up
+CREATE TABLE links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE
+);
+
+-- +goose Down
+DROP TABLE links;
