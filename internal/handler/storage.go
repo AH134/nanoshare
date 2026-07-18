@@ -1,10 +1,7 @@
 package handler
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -12,13 +9,11 @@ import (
 	"github.com/AH134/nanoshare/internal/database"
 	"github.com/AH134/nanoshare/internal/session"
 	"github.com/AH134/nanoshare/internal/storage"
+	"github.com/AH134/nanoshare/internal/token"
 	"github.com/alexedwards/scs/v2"
 )
 
-const (
-	STORAGE_KEY_LENGTH = 32
-	REQ_FILE_KEY       = "file"
-)
+const DefaultFileKey = "file"
 
 type StorageHandler struct {
 	files          *database.FileRepository
@@ -34,15 +29,6 @@ func NewStorageHandler(files *database.FileRepository, sessionManager *scs.Sessi
 	}
 }
 
-func generateKey(length int) (string, error) {
-	key := make([]byte, length)
-	if _, err := rand.Read(key); err != nil {
-		return "", fmt.Errorf("failed to generate key: %w", err)
-	}
-
-	return base64.URLEncoding.EncodeToString(key), nil
-}
-
 func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	userID := h.sessionManager.GetInt(r.Context(), session.UserIDKey)
 
@@ -52,14 +38,14 @@ func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, fileHeader, err := r.FormFile(REQ_FILE_KEY)
+	file, fileHeader, err := r.FormFile(DefaultFileKey)
 	if err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	storageKey, err := generateKey(STORAGE_KEY_LENGTH)
+	storageKey, err := token.Generate(token.DefaultLength)
 	if err != nil {
 		http.Error(w, "failed to upload file", http.StatusInternalServerError)
 		return
