@@ -8,11 +8,17 @@ import (
 	"github.com/AH134/nanoshare/internal/database"
 	"github.com/AH134/nanoshare/internal/server"
 	"github.com/AH134/nanoshare/internal/session"
+	"github.com/AH134/nanoshare/internal/storage"
 	"github.com/alexedwards/scs/sqlite3store"
 )
 
 func main() {
 	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	storage, err := storage.NewLocalStorage(cfg.StoragePath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,7 +40,7 @@ func main() {
 	sessionManager := session.New(db.Conn())
 	sqlite3store.NewWithCleanupInterval(db.Conn(), 10*time.Minute)
 
-	app := server.NewApplication(db, userRepo, sessionManager, cfg)
+	app := server.NewApplication(db, userRepo, sessionManager, storage, cfg)
 
 	if err := app.Run(app.Mount()); err != nil {
 		log.Fatalf("nanoshare has failed to start: %s", err)

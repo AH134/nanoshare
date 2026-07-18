@@ -10,6 +10,7 @@ import (
 	"github.com/AH134/nanoshare/internal/database"
 	"github.com/AH134/nanoshare/internal/handler"
 	"github.com/AH134/nanoshare/internal/middleware"
+	"github.com/AH134/nanoshare/internal/storage"
 	"github.com/alexedwards/scs/v2"
 )
 
@@ -17,14 +18,16 @@ type Application struct {
 	db             *database.DB
 	userRepo       *database.UserRepository
 	sessionManager *scs.SessionManager
+	storage        storage.Storage
 	config         *config.EnvConfig
 }
 
-func NewApplication(db *database.DB, userRepo *database.UserRepository, sm *scs.SessionManager, cfg *config.EnvConfig) *Application {
+func NewApplication(db *database.DB, userRepo *database.UserRepository, sm *scs.SessionManager, storage storage.Storage, cfg *config.EnvConfig) *Application {
 	return &Application{
 		db:             db,
 		userRepo:       userRepo,
 		sessionManager: sm,
+		storage:        storage,
 		config:         cfg,
 	}
 }
