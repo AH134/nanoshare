@@ -35,8 +35,12 @@ func NewApplication(db *database.DB, userRepo *database.UserRepository, sm *scs.
 func (a *Application) Mount() http.Handler {
 	r := http.NewServeMux()
 
+	// db repositories
+	fileRepo := database.NewFileRepository(a.db)
+
 	// handlers
 	authHandler := handler.NewAuthHandler(a.userRepo, a.sessionManager)
+	storageHandler := handler.NewStorageHandler(fileRepo, a.sessionManager, a.storage)
 
 	// middlewares
 	mwChain := middleware.Chain(
@@ -48,8 +52,11 @@ func (a *Application) Mount() http.Handler {
 	// routes
 	r.HandleFunc("GET /api/health", handler.HealthCheck)
 	r.Handle("GET /api/me", requireAuth(http.HandlerFunc(authHandler.Me)))
+
 	r.HandleFunc("POST /api/auth/login", authHandler.Login)
 	r.Handle("POST /api/auth/logout", requireAuth(http.HandlerFunc(authHandler.Logout)))
+
+	r.Handle("POST /api/files", requireAuth(http.HandlerFunc(storageHandler.Upload)))
 
 	return mwChain(r)
 }

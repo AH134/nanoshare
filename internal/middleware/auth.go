@@ -10,7 +10,7 @@ import (
 func RequireAuth(sessionManager *scs.SessionManager) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !sessionManager.Exists(r.Context(), session.UserIdKey) {
+			if !sessionManager.Exists(r.Context(), session.UserIDKey) {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}

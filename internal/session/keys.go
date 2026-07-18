@@ -1,3 +1,3 @@
 package session
 
-const UserIdKey = "userId"
+const UserIDKey = "userId"
