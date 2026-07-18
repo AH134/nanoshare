@@ -30,6 +30,27 @@ type Link struct {
 	RevokedAt     Nullable[time.Time] `json:"revokedAt"`
 }
 
+func (l *Link) IsValid() bool {
+	revokedAt := l.RevokedAt
+	expiresAt := l.ExpiresAt
+	maxDownloads := l.MaxDownloads
+	downloadCount := l.DownloadCount
+
+	if revokedAt.Valid {
+		return false
+	}
+
+	if expiresAt.Valid && expiresAt.V.Before(time.Now()) {
+		return false
+	}
+
+	if maxDownloads.Valid && int(maxDownloads.V) <= downloadCount {
+		return false
+	}
+
+	return true
+}
+
 type LinkRepository struct {
 	db *DB
 }
@@ -77,6 +98,15 @@ func (r *LinkRepository) Revoke(id int) error {
 	_, err := r.db.Conn().Exec(query, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update revoked_at attribute for link %d: %w", id, err)
+	}
+	return nil
+}
+
+func (r *LinkRepository) IncrementDownloadCount(id int) error {
+	query := "UPDATE links SET download_count = download_count + 1 WHERE id = ?"
+	_, err := r.db.Conn().Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to update download_count attribute for link %d: %w", id, err)
 	}
 	return nil
 }

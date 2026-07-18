@@ -42,7 +42,7 @@ func (a *Application) Mount() http.Handler {
 	// handlers
 	authHandler := handler.NewAuthHandler(a.userRepo, a.sessionManager)
 	storageHandler := handler.NewStorageHandler(fileRepo, a.sessionManager, a.storage)
-	linkHandler := handler.NewLinkHandler(linkRepo, fileRepo, a.sessionManager)
+	linkHandler := handler.NewLinkHandler(linkRepo, fileRepo, a.sessionManager, a.storage)
 
 	// middlewares
 	mwChain := middleware.Chain(
@@ -62,6 +62,8 @@ func (a *Application) Mount() http.Handler {
 	r.Handle("POST /api/files", requireAuth(http.HandlerFunc(storageHandler.Upload)))
 
 	r.Handle("POST /api/files/{id}/links", requireAuth(http.HandlerFunc(linkHandler.Create)))
+
+	r.HandleFunc("GET /d/{token}", linkHandler.Download)
 
 	return mwChain(r)
 }

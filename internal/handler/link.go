@@ -2,12 +2,16 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/AH134/nanoshare/internal/database"
+	"github.com/AH134/nanoshare/internal/storage"
 	"github.com/AH134/nanoshare/internal/token"
 	"github.com/alexedwards/scs/v2"
 )
@@ -21,13 +25,15 @@ type LinkHandler struct {
 	links          *database.LinkRepository
 	files          *database.FileRepository
 	sessionManager *scs.SessionManager
+	storage        storage.Storage
 }
 
-func NewLinkHandler(links *database.LinkRepository, files *database.FileRepository, sessionManager *scs.SessionManager) *LinkHandler {
+func NewLinkHandler(links *database.LinkRepository, files *database.FileRepository, sessionManager *scs.SessionManager, storage storage.Storage) *LinkHandler {
 	return &LinkHandler{
 		links:          links,
 		files:          files,
 		sessionManager: sessionManager,
+		storage:        storage,
 	}
 }
 
@@ -84,7 +90,7 @@ func (h *LinkHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	createdLink, err := h.links.GetByToken(linkToken)
 	if err != nil {
-		http.Error(w, "failed to fetch link", http.StatusInternalServerError)
+		http.Error(w, "failed to fetch link", http.StatusNotFound)
 		return
 	}
 
@@ -92,4 +98,52 @@ func (h *LinkHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(createdLink); err != nil {
 		log.Printf("create link: failed to encode response: %v", err)
 	}
+}
+
+func (h *LinkHandler) Download(w http.ResponseWriter, r *http.Request) {
+	value := r.PathValue("token")
+
+	link, err := h.links.GetByToken(value)
+	if err != nil {
+		http.Error(w, "failed to fetch link", http.StatusNotFound)
+		return
+	}
+
+	validLink := link.IsValid()
+	if !validLink {
+		http.Error(w, "this link is no longer available", http.StatusGone)
+		return
+	}
+
+	file, err := h.files.GetByID(link.FileID)
+	if err != nil {
+		http.Error(w, "failed to fetch file", http.StatusInternalServerError)
+		return
+	}
+
+	storageFile, err := h.storage.Open(r.Context(), file.StorageKey)
+	if err != nil {
+		http.Error(w, "failed to fetch file", http.StatusInternalServerError)
+		return
+	}
+	defer storageFile.Close()
+
+	escapedFilename := url.PathEscape(file.OriginalFilename)
+	dispositionValue := fmt.Sprintf("attachment; filename=\"fallback.bin\"; filename*=UTF-8''%s", escapedFilename)
+
+	w.Header().Set("Content-Disposition", dispositionValue)
+	w.Header().Set("Content-Type", file.MimeType)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	seeker, ok := storageFile.(io.ReadSeeker)
+	if !ok {
+		http.Error(w, "stream does not support seeking", http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.links.IncrementDownloadCount(link.ID); err != nil {
+		log.Printf("failed to increment download count for link %d: %v", link.ID, err)
+	}
+
+	http.ServeContent(w, r, "", time.Now(), seeker)
 }
