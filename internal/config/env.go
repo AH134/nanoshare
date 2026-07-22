@@ -10,6 +10,7 @@ type EnvConfig struct {
 	AdminPassword string
 	Port          string
 	DbPath        string
+	StoragePath   string
 }
 
 func Load() (*EnvConfig, error) {
@@ -18,6 +19,7 @@ func Load() (*EnvConfig, error) {
 		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
 		Port:          getEnv("PORT", "8080"),
 		DbPath:        getEnv("DB_PATH", "./data/nanoshare.db"),
+		StoragePath:   getEnv("STORAGE_PATH", "./data/storage"),
 	}
 
 	if cfg.AdminUsername == "" || cfg.AdminPassword == "" {

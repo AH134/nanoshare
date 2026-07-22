@@ -1,6 +1,6 @@
 include .env
 export
-.PHONY: dev-backend dev-frontend clean migrate-up migrate-down create-admin
+.PHONY: dev-backend dev-frontend clean migrate-up migrate-down create-admin reset-db
 
 dev-backend:
 	air
@@ -18,4 +18,4 @@ create-admin:
 	go run ./cmd/nanoshare/createadmin/main.go --username=$(ADMIN_USERNAME) --password=$(ADMIN_PASSWORD)
 
 clean:
-	rm -rf air/tmp ui/dist
+	rm -rf air/tmp ui/dist data/*

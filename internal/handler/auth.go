@@ -63,7 +63,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.sessionManager.Put(r.Context(), session.UserIdKey, user.Id)
+	h.sessionManager.Put(r.Context(), session.DefaultUserIDKey, user.Id)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -78,7 +78,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	userId := h.sessionManager.GetInt(r.Context(), session.UserIdKey)
+	userId := h.sessionManager.GetInt(r.Context(), session.DefaultUserIDKey)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]int{"userId": userId}); err != nil {

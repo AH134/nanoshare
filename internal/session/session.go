@@ -8,6 +8,8 @@ import (
 	"github.com/alexedwards/scs/v2"
 )
 
+const DefaultUserIDKey = "userId"
+
 func New(db *sql.DB) *scs.SessionManager {
 	sessionManager := scs.New()
 
