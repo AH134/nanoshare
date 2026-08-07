@@ -41,6 +41,22 @@ func (r *UserRepository) GetByUsername(username string) (*User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) GetById(id int) (*User, error) {
+	var user User
+	query := "SELECT id, username, password_hash, created_at FROM users WHERE id = ?"
+	err := r.db.Conn().QueryRow(query, id).Scan(
+		&user.Id,
+		&user.Username,
+		&user.PasswordHash,
+		&user.CreateAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func (r *UserRepository) CreateAdmin(username, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
