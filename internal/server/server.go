@@ -11,6 +11,7 @@ import (
 	"github.com/AH134/nanoshare/internal/handler"
 	"github.com/AH134/nanoshare/internal/middleware"
 	"github.com/AH134/nanoshare/internal/storage"
+	"github.com/AH134/nanoshare/ui"
 	"github.com/alexedwards/scs/v2"
 )
 
@@ -34,6 +35,11 @@ func NewApplication(db *database.DB, userRepo *database.UserRepository, sm *scs.
 
 func (a *Application) Mount() http.Handler {
 	r := http.NewServeMux()
+
+	spaHandler, err := handler.SpaHandler(ui.DistFS)
+	if err != nil {
+		log.Panicf("failed to initialized spa handler: %v", err)
+	}
 
 	// db repositories
 	fileRepo := database.NewFileRepository(a.db)
@@ -64,6 +70,8 @@ func (a *Application) Mount() http.Handler {
 	r.Handle("POST /api/files/{id}/links", requireAuth(http.HandlerFunc(linkHandler.Create)))
 
 	r.HandleFunc("GET /d/{token}", linkHandler.Download)
+
+	r.Handle("GET /", spaHandler)
 
 	return mwChain(r)
 }
