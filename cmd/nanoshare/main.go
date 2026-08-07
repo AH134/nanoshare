@@ -37,7 +37,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	sessionManager := session.New(db.Conn())
+	sessionManager := session.New(db.Conn(), cfg.Prod)
 	sqlite3store.NewWithCleanupInterval(db.Conn(), 10*time.Minute)
 
 	app := server.NewApplication(db, userRepo, sessionManager, storage, cfg)

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 type EnvConfig struct {
@@ -11,6 +12,7 @@ type EnvConfig struct {
 	Port          string
 	DbPath        string
 	StoragePath   string
+	Prod          bool
 }
 
 func Load() (*EnvConfig, error) {
@@ -20,6 +22,7 @@ func Load() (*EnvConfig, error) {
 		Port:          getEnv("PORT", "8080"),
 		DbPath:        getEnv("DB_PATH", "./data/nanoshare.db"),
 		StoragePath:   getEnv("STORAGE_PATH", "./data/storage"),
+		Prod:          getEnvBool("PROD", true),
 	}
 
 	if cfg.AdminUsername == "" || cfg.AdminPassword == "" {
@@ -27,6 +30,14 @@ func Load() (*EnvConfig, error) {
 	}
 
 	return cfg, nil
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	val, err := strconv.ParseBool(os.Getenv(key))
+	if err != nil {
+		return fallback
+	}
+	return val
 }
 
 func getEnv(key, fallback string) string {

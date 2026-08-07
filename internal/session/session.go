@@ -10,13 +10,15 @@ import (
 
 const DefaultUserIDKey = "userId"
 
-func New(db *sql.DB) *scs.SessionManager {
+func New(db *sql.DB, prod bool) *scs.SessionManager {
 	sessionManager := scs.New()
 
 	sessionManager.Store = sqlite3store.New(db)
 	// sessionManager.Lifetime = 30 * time.Second
 	sessionManager.Lifetime = 24 * time.Hour
 	sessionManager.IdleTimeout = 20 * time.Minute
+
+	sessionManager.Cookie.Secure = prod
 
 	return sessionManager
 }
