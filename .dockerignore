@@ -1,0 +1,41 @@
+# editor
+.git
+.gitignore
+.vscode
+.idea
+
+# go
+tmp
+*.exe
+*.test
+*.out
+nanoshare
+
+# go air
+.air.toml
+
+# frontend
+ui/node_modules
+ui/dist
+ui/.tanstack
+
+# docs
+*.md
+README*
+
+# env
+.env
+.env.*
+*.pem
+*.key
+
+# docker
+.dockerignore
+Dockerfile
+compose.*.yml
+
+# runtime data
+data/
+*.db
+*.sqlite
+*.sqlite3

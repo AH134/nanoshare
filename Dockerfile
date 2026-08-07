@@ -1,3 +1,14 @@
+FROM node:lts-alpine AS ui-builder
+
+WORKDIR /app/ui
+
+COPY ui/package.json ui/package-lock.json ./
+RUN npm ci
+
+COPY ui/ ./
+RUN npm run build
+
+
 FROM golang:1.26.0 AS builder
 
 WORKDIR /app
@@ -8,25 +19,26 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+COPY --from=ui-builder /app/ui/dist ./ui/dist
 
 RUN go build -trimpath -ldflags="-s -w" -o nanoshare ./cmd/nanoshare
 
-FROM alpine:latest 
+
+FROM alpine:3.23.5
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates tzdata
-
-RUN addgroup -S appuser \
-    && adduser -S -G appuser -H -s /sbin/nologin appuser
+RUN apk add --no-cache ca-certificates tzdata && \
+    addgroup -S appuser && \
+    adduser -S -G appuser -H -s /sbin/nologin appuser && \
+    mkdir -p /app/data && chown appuser:appuser /app/data
 
 COPY --from=builder --chown=appuser:appuser /app/nanoshare /app/nanoshare
 
-RUN mkdir -p /app/data && chown appuser:appuser /app/data
+VOLUME /app/data
 
 USER appuser
 
 EXPOSE 8080
 
 ENTRYPOINT [ "/app/nanoshare" ]
-
