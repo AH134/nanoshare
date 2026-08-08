@@ -6,28 +6,28 @@ import { routeTree } from "./routeTree.gen";
 const queryClient = new QueryClient();
 
 const router = createRouter({
-	routeTree,
-	context: {
-		queryClient,
-	},
-	defaultPreload: "intent",
-	scrollRestoration: true,
-	defaultPreloadStaleTime: 0,
+  routeTree,
+  context: {
+    queryClient,
+  },
+  defaultPreload: "intent",
+  scrollRestoration: true,
+  defaultPreloadStaleTime: 0,
 });
 
 declare module "@tanstack/react-router" {
-	interface Register {
-		router: typeof router;
-	}
+  interface Register {
+    router: typeof router;
+  }
 }
 
 const rootElement = document.getElementById("app");
 
 if (rootElement && !rootElement.innerHTML) {
-	const root = ReactDOM.createRoot(rootElement);
-	root.render(
-		<QueryClientProvider client={queryClient}>
-			<RouterProvider router={router} />
-		</QueryClientProvider>,
-	);
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
 }

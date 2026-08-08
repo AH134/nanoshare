@@ -7,25 +7,25 @@ import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const config = defineConfig({
-	server: {
-		proxy: {
-			"/api": {
-				target: "http://localhost:8080",
-				changeOrigin: true,
-			},
-			"/d": {
-				target: "http://localhost:8080",
-				changeOrigin: true,
-			},
-		},
-	},
-	resolve: { tsconfigPaths: true },
-	plugins: [
-		devtools(),
-		tailwindcss(),
-		tanstackRouter({ target: "react", autoCodeSplitting: true }),
-		viteReact(),
-	],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+      "/d": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
+  },
+  resolve: { tsconfigPaths: true },
+  plugins: [
+    devtools(),
+    tailwindcss(),
+    tanstackRouter({ target: "react", autoCodeSplitting: true }),
+    viteReact(),
+  ],
 });
 
 export default config;
