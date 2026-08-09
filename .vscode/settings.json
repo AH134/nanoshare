@@ -2,6 +2,7 @@
 	"files.watcherExclude": {
 		"**/routeTree.gen.ts": true
 	},
+	"biome.lsp.bin": "./ui/node_modules/.bin/biome",
 	"search.exclude": {
 		"**/routeTree.gen.ts": true
 	},

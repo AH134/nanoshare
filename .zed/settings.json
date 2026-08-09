@@ -1,5 +1,12 @@
 {
 	"format_on_save": "on",
+	"lsp": {
+		"biome": {
+			"settings": {
+				"config_path": "./ui/biome.json"
+			}
+		}
+	},
 	"languages": {
 		"TypeScript": {
 			"language_servers": ["biome", "vtsls"],
