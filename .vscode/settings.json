@@ -3,6 +3,7 @@
 		"**/routeTree.gen.ts": true
 	},
 	"biome.lsp.bin": "./ui/node_modules/.bin/biome",
+	"biome.configurationPath": "./ui/biome.json",
 	"search.exclude": {
 		"**/routeTree.gen.ts": true
 	},
