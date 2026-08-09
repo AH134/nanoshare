@@ -18,7 +18,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem("nanoshare-theme", theme);
+    localStorage.setItem("nanoshare-theme", newTheme);
     document.documentElement.setAttribute("data-theme", getTheme(newTheme));
   };
 

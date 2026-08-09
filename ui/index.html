@@ -10,6 +10,18 @@
     <meta name="apple-mobile-web-app-title" content="Nanoshare" />
     <link rel="manifest" href="/site.webmanifest" />
     <title>Nanoshare</title>
+    <script>
+      (() => {
+        const theme = localStorage.getItem("nanoshare-theme") || "system";
+        const resolved =
+          theme === "system"
+            ? window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : theme;
+        document.documentElement.setAttribute("data-theme", resolved);
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
