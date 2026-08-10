@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import Loading from "#/components/Loading";
 import { authQueryOptions } from "#/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -14,5 +15,6 @@ export const Route = createFileRoute("/_authenticated")({
 
     return { user };
   },
+  pendingComponent: Loading,
   component: () => <Outlet />,
 });
