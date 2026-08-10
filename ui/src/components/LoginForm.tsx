@@ -11,7 +11,6 @@ export default function LoginForm() {
   const handleLogin = async (formData: FormData) => {
     const username = formData.get("username") as string;
     const password = formData.get("password") as string;
-    console.log(username, password);
     try {
       await loginMutation.mutateAsync(
         { username, password },
