@@ -37,7 +37,10 @@ export default function LoginForm() {
             </div>
           )}
           <fieldset className="fieldset">
-            <label className="label text-primary text-sm" htmlFor="username">
+            <label
+              className="label text-base-content text-sm"
+              htmlFor="username"
+            >
               Username
             </label>
             <input
@@ -49,14 +52,14 @@ export default function LoginForm() {
               required
             />
             <label
-              className="label text-primary text-sm mt-2"
+              className="label text-base-content text-sm mt-2"
               htmlFor="password"
             >
               Password
             </label>
             <PasswordInput id="password" name="password" required />
             <button
-              className="btn btn-primary hover:bg-primary/80 mt-4"
+              className="btn btn-neutral mt-4"
               type="submit"
               disabled={loginMutation.isPending}
             >

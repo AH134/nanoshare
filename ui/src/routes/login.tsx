@@ -26,7 +26,7 @@ function RouteComponent() {
           <h1 className="text-5xl font-extrabold">NANOSHARE</h1>
           <div className="p-5 mt-2 mb-1">
             <p className="text-xl ">Log in to your account</p>
-            <p className="text-md text-primary/60 mt-1">
+            <p className="text-md text-base-content/60 mt-1">
               Welcome back! Please enter your details
             </p>
           </div>
