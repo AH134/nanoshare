@@ -47,7 +47,7 @@ export default function LoginForm() {
               type="text"
               id="username"
               name="username"
-              className="input bg-base-200/40 focus:outline-none"
+              className="input bg-base-200 focus:outline-none"
               placeholder="Enter your username"
               required
             />
@@ -59,7 +59,7 @@ export default function LoginForm() {
             </label>
             <PasswordInput id="password" name="password" required />
             <button
-              className="btn btn-neutral mt-4"
+              className="btn btn-primary mt-4"
               type="submit"
               disabled={loginMutation.isPending}
             >

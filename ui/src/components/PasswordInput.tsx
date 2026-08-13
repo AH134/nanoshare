@@ -25,7 +25,7 @@ export default function PasswordInput({
         type={showPassword ? "text" : "password"}
         id={id}
         name={name}
-        className="input bg-base-200/40 w-full pr-10 focus:outline-none"
+        className="input bg-base-200 w-full pr-10 focus:outline-none"
         placeholder={placeholder}
         required={required}
       />
