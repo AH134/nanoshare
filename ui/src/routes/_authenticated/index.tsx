@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PageTitle } from "#/components/PageTitle";
+import { UploadZone } from "#/components/UploadZone";
 import { useAuth } from "#/hooks/use-auth";
 import { useTheme } from "#/hooks/use-theme";
 
@@ -8,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const { user, logoutMutation } = useAuth();
+  const { logoutMutation } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const handleLogout = () => {
@@ -18,7 +20,11 @@ function RouteComponent() {
   };
   return (
     <div>
-      Hello {user?.username}!
+      <PageTitle
+        title="Upload your files"
+        description="Drag files into the zone below or click to browse. Set a download limit
+        and expiry date, then share the link."
+      />
       <button
         type="button"
         onClick={handleLogout}

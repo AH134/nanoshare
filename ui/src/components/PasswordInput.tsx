@@ -8,7 +8,7 @@ interface PasswordInputProps {
   required?: boolean;
 }
 
-export default function PasswordInput({
+export function PasswordInput({
   id,
   name,
   placeholder = "Enter your password",

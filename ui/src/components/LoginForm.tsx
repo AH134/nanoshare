@@ -1,9 +1,9 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { TriangleAlert } from "lucide-react";
 import { useAuth } from "#/hooks/use-auth";
-import PasswordInput from "./PasswordInput";
+import { PasswordInput } from "./PasswordInput";
 
-export default function LoginForm() {
+export function LoginForm() {
   const { loginMutation } = useAuth();
   const navigate = useNavigate();
   const search = useSearch({ from: "/login" });
