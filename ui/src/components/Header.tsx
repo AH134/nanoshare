@@ -4,8 +4,8 @@ import { NavbarUserMenu } from "./NavbarUserMenu";
 
 export function Header() {
   return (
-    <div className="bg-base-100 shadow-sm">
-      <div className="navbar max-w-6xl mx-auto">
+    <div className="bg-base-100 border-b border-base-300">
+      <div className="navbar max-w-4xl mx-auto">
         <div className="navbar-start">
           <Link to="/" className="text-xl font-semibold">
             Nanoshare

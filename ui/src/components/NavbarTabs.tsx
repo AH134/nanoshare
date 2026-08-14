@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { navLinks } from "./nav-links";
 
 export function NavbarTabs() {
-  const activeTab = { className: "tab tab-active" };
+  const activeTab = { className: "tab tab-active text-primary" };
 
   return (
     <div role="tablist" className="tabs tabs-border">

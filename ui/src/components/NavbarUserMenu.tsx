@@ -33,7 +33,7 @@ export function NavbarUserMenu() {
         style={{ anchorName: "--user-menu-anchor" } as React.CSSProperties}
       >
         <div className="avatar avatar-placeholder">
-          <div className="bg-accent/80 text-accent-content w-8 rounded-full">
+          <div className="bg-primary/10 text-primary w-8 rounded-full">
             <span className="text-sm font-semibold capitalize">
               {user?.username[0]}
             </span>
@@ -42,7 +42,7 @@ export function NavbarUserMenu() {
       </button>
 
       <ul
-        className="dropdown dropdown-end menu w-52 rounded-box bg-base-100 p-2 shadow-sm"
+        className="dropdown dropdown-end menu w-52 rounded-box bg-base-100 p-2 border border-base-300"
         ref={popoverRef}
         popover="auto"
         id="user-menu-popover"
@@ -58,8 +58,8 @@ export function NavbarUserMenu() {
         ))}
         <div className="divider m-0"></div>
         <li>
-          <button type="button" onClick={handleLogout}>
-            <LogOut className="size-4" /> Log out
+          <button type="button" className="text-error" onClick={handleLogout}>
+            <LogOut className="size-4" /> <span>Log out</span>
           </button>
         </li>
       </ul>
