@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOut } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { useRef } from "react";
 import { useAuth } from "#/hooks/use-auth";
 import { navLinks } from "./nav-links";
@@ -28,17 +28,19 @@ export function NavbarUserMenu() {
     <>
       <button
         type="button"
-        className="rounded-full"
         popoverTarget="user-menu-popover"
         style={{ anchorName: "--user-menu-anchor" } as React.CSSProperties}
       >
-        <div className="avatar avatar-placeholder">
-          <div className="bg-primary/10 text-primary w-8 rounded-full">
+        <div className="avatar avatar-placeholder mr-1">
+          <div className="bg-primary/20 text-primary w-8 rounded-full">
             <span className="text-sm font-semibold capitalize">
-              {user?.username[0]}
+              <User className="size-5" />
             </span>
           </div>
         </div>
+        <span className="font-medium text-base-content/80">
+          {user?.username}
+        </span>
       </button>
 
       <ul
