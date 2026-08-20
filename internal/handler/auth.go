@@ -108,7 +108,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.users.GetById(userId)
 	if err != nil {
-		http.Error(w, "user not found", http.StatusInternalServerError)
+		log.Printf("logout: failed to get user from database: %v", err)
 		response.Error(w, http.StatusNotFound, response.APIError{
 			Code:    "USER_NOT_FOUND",
 			Message: "User does not exist.",
