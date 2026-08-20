@@ -4,11 +4,11 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { authService } from "#/services/auth";
+import { getMe, login, logout } from "#/services/auth";
 
 export const authQueryOptions = queryOptions({
   queryKey: ["auth", "me"],
-  queryFn: authService.getMe,
+  queryFn: getMe,
   retry: false,
   staleTime: Infinity,
 });
@@ -24,14 +24,14 @@ export function useAuth() {
     }: {
       username: string;
       password: string;
-    }) => authService.login(username, password),
+    }) => login(username, password),
     onSuccess: (user) => {
       queryClient.setQueryData(authQueryOptions.queryKey, user);
     },
   });
 
   const logoutMutation = useMutation({
-    mutationFn: authService.logout,
+    mutationFn: logout,
     onSettled: () => {
       queryClient.setQueryData(authQueryOptions.queryKey, null);
     },

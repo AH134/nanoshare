@@ -6,24 +6,27 @@ export interface User {
   createdAt: string;
 }
 
-export const authService = {
-  async getMe(): Promise<User | null> {
-    try {
-      return await request<User>("/api/me");
-    } catch {
-      return null;
-    }
-  },
+export interface LoginPayload {
+  username: string;
+  password: string;
+}
 
-  async login(username: string, password: string): Promise<User> {
-    return await request<User>("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-  },
+export async function getMe(): Promise<User | null> {
+  try {
+    return await request<User>("/api/me");
+  } catch {
+    return null;
+  }
+}
 
-  async logout(): Promise<void> {
-    await request<void>("/api/auth/logout", { method: "POST" });
-  },
-};
+export async function login(username: string, password: string): Promise<User> {
+  return await request<User>("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export async function logout(): Promise<void> {
+  await request<void>("/api/auth/logout", { method: "POST" });
+}
