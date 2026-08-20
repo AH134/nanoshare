@@ -27,13 +27,13 @@ func writeJSON[T any](w http.ResponseWriter, statusCode int, v T) {
 func Success[T any](w http.ResponseWriter, statusCode int, data T) {
 	writeJSON(w, statusCode, Envelope[T]{
 		Success: true,
-		Data:    new(T(data)),
+		Data:    new(data),
 	})
 }
 
 func Error(w http.ResponseWriter, statusCode int, apiErr APIError) {
 	writeJSON(w, statusCode, Envelope[any]{
 		Success: false,
-		Error:   new(APIError(apiErr)),
+		Error:   new(apiErr),
 	})
 }
