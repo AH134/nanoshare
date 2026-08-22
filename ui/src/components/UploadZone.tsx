@@ -1,10 +1,33 @@
 import { Upload } from "lucide-react";
+import { useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { useFiles } from "#/hooks/use-files";
 
 export function UploadZone() {
+  const [maxDownloads, setMaxDownloads] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+
+  const { uploadMutation } = useFiles();
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: (acceptedFiles) => {
-      console.log(acceptedFiles);
+    onDrop: async (acceptedFiles) => {
+      for (const file of acceptedFiles) {
+        try {
+          await uploadMutation.mutateAsync({
+            file,
+            linkOptions: {
+              maxDownloads: maxDownloads ? Number(maxDownloads) : null,
+              expiresAt:
+                expiresAt !== "" ? new Date(expiresAt).toISOString() : null,
+            },
+          });
+          console.log(maxDownloads ? Number(maxDownloads) : null);
+          console.log(
+            expiresAt !== "" ? new Date(expiresAt).toISOString() : null,
+          );
+        } catch (err) {
+          console.error(`Failed to upload/link ${file.name}:`, err);
+        }
+      }
     },
   });
 
@@ -35,7 +58,7 @@ export function UploadZone() {
                 className="label text-base-content"
                 htmlFor="max-downloads"
               >
-                Max downloads
+                Max downloads test={maxDownloads}
               </label>
               <input
                 type="number"
@@ -43,13 +66,28 @@ export function UploadZone() {
                 className="input"
                 min={1}
                 placeholder="Unlimited"
+                value={maxDownloads}
+                onChange={(e) => setMaxDownloads(e.target.value)}
               />
             </fieldset>
             <fieldset className="fieldset">
               <label className="label text-base-content" htmlFor="expiry-date">
-                Expiry date
+                Expiry date test={new Date().toISOString()}---
+                {/* {new Date().toUTCString()} */}
               </label>
-              <input type="date" id="expiry-date" className="input" />
+              <input
+                type="datetime-local"
+                id="expiry-date"
+                className="input"
+                min={(() => {
+                  const offset = new Date().getTimezoneOffset() * 60000;
+                  return new Date(Date.now() - offset)
+                    .toISOString()
+                    .slice(0, -8);
+                })()}
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+              />
             </fieldset>
           </div>
           <p className="text-base-content/60 text-xs">
