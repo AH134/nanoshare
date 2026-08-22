@@ -7,13 +7,14 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+const dbPragmaOptions = "?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)&_pragma=temp_store(MEMORY)&_time_format=sqlite&_timezone=UTC&_texttotime=1"
+
 type DB struct {
 	conn *sql.DB
 }
 
 func New(path string) (*DB, error) {
-	dbPramaOptions := "?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)&_pragma=temp_store(MEMORY)"
-	dsn := path + dbPramaOptions
+	dsn := path + dbPragmaOptions
 
 	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {

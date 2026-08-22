@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/AH134/nanoshare/internal/database"
+	"github.com/AH134/nanoshare/internal/response"
 	"github.com/AH134/nanoshare/internal/session"
 	"github.com/AH134/nanoshare/internal/storage"
 	"github.com/AH134/nanoshare/internal/token"
@@ -30,29 +30,47 @@ func NewStorageHandler(files *database.FileRepository, sessionManager *scs.Sessi
 }
 
 func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
-	userID := h.sessionManager.GetInt(r.Context(), session.DefaultUserIDKey)
+	userID := h.sessionManager.GetInt64(r.Context(), session.DefaultUserIDKey)
 
 	// limit memory usage to 32mb
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
-		return
+		response.Error(w, http.StatusBadRequest, response.APIError{
+			Code:    "INVALID_MULTIPART_FORM",
+			Message: "Failed to process the uploaded form data.",
+		})
 	}
 
 	file, fileHeader, err := r.FormFile(DefaultFileKey)
 	if err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
-		return
+		if errors.Is(err, http.ErrMissingFile) {
+			response.Error(w, http.StatusBadRequest, response.APIError{
+				Code:    "MISSING_FILE",
+				Message: "The required file parameter is missing from the request.",
+			})
+			return
+		}
+
+		response.Error(w, http.StatusBadRequest, response.APIError{
+			Code:    "INVALID_MULTIPART_FORM",
+			Message: "Failed to process the uploaded form data.",
+		})
 	}
 	defer file.Close()
 
 	storageKey, err := token.Generate(token.DefaultLength)
 	if err != nil {
-		http.Error(w, "failed to upload file", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, response.APIError{
+			Code:    "INTERNAL_ERROR",
+			Message: "An error occured while processing your uploaded file(s).",
+		})
 		return
 	}
 
 	if err := h.storage.Save(r.Context(), storageKey, file); err != nil {
-		http.Error(w, "failed to upload file", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, response.APIError{
+			Code:    "INTERNAL_ERROR",
+			Message: "An error occured while saving your uploaded file(s).",
+		})
 		return
 	}
 
@@ -60,24 +78,30 @@ func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
 	}
-	uploadedFile := &database.UploadedFile{
-		OwnerID:          userID,
-		OriginalFilename: fileHeader.Filename,
-		StorageKey:       storageKey,
-		SizeBytes:        fileHeader.Size,
-		MimeType:         mimeType,
-		UploadedAt:       time.Now(),
-	}
-	if err := h.files.Create(uploadedFile); err != nil {
+
+	createdFile, err := h.files.Create(
+		database.UploadedFile{
+			OwnerID:          userID,
+			OriginalFilename: fileHeader.Filename,
+			StorageKey:       storageKey,
+			SizeBytes:        fileHeader.Size,
+			MimeType:         mimeType,
+		})
+
+	if err != nil {
 		// remove from storage if failed to save to db
 		if delErr := h.storage.Delete(r.Context(), storageKey); delErr != nil {
 			log.Printf("upload: failed to clean up orphaned file %s: %v", storageKey, delErr)
 		}
-		http.Error(w, "failed to upload file", http.StatusInternalServerError)
+
+		response.Error(w, http.StatusInternalServerError, response.APIError{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to upload file.",
+		})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	response.Success(w, http.StatusCreated, createdFile)
 }
 
 func (h *StorageHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +109,10 @@ func (h *StorageHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 
 	files, err := h.files.GetAllByOwnerID(userID)
 	if err != nil {
-		http.Error(w, "failed to fetch all files", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, response.APIError{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to fetch files.",
+		})
 		return
 	}
 
@@ -93,9 +120,5 @@ func (h *StorageHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		files = make([]*database.UploadedFile, 0)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(files); err != nil {
-		http.Error(w, "failed to fetch all files", http.StatusInternalServerError)
-		return
-	}
+	response.Success(w, http.StatusOK, files)
 }

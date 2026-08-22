@@ -2,14 +2,12 @@ package main
 
 import (
 	"log"
-	"time"
 
 	"github.com/AH134/nanoshare/internal/config"
 	"github.com/AH134/nanoshare/internal/database"
 	"github.com/AH134/nanoshare/internal/server"
 	"github.com/AH134/nanoshare/internal/session"
 	"github.com/AH134/nanoshare/internal/storage"
-	"github.com/alexedwards/scs/sqlite3store"
 )
 
 func main() {
@@ -38,7 +36,6 @@ func main() {
 	}
 
 	sessionManager := session.New(db.Conn(), cfg.Prod)
-	sqlite3store.NewWithCleanupInterval(db.Conn(), 10*time.Minute)
 
 	app := server.NewApplication(db, userRepo, sessionManager, storage, cfg)
 
