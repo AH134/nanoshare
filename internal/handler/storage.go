@@ -30,7 +30,7 @@ func NewStorageHandler(files *database.FileRepository, sessionManager *scs.Sessi
 }
 
 func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
-	userID := h.sessionManager.GetInt64(r.Context(), session.DefaultUserIDKey)
+	userID := h.sessionManager.GetInt(r.Context(), session.DefaultUserIDKey)
 
 	// limit memory usage to 32mb
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
@@ -79,8 +79,8 @@ func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		mimeType = "application/octet-stream"
 	}
 
-	createdFile, err := h.files.Create(
-		database.UploadedFile{
+	err = h.files.Create(
+		&database.UploadedFile{
 			OwnerID:          userID,
 			OriginalFilename: fileHeader.Filename,
 			StorageKey:       storageKey,
@@ -101,7 +101,7 @@ func (h *StorageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Success(w, http.StatusCreated, createdFile)
+	response.Success(w, http.StatusCreated, struct{}{})
 }
 
 func (h *StorageHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
