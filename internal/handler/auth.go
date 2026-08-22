@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -19,7 +20,7 @@ type LoginRequest struct {
 }
 
 type AuthResponse struct {
-	Id        int       `json:"id"`
+	ID        int64     `json:"id"`
 	Username  string    `json:"username"`
 	CreatedAt time.Time `json:"createdAt"`
 }
@@ -38,8 +39,7 @@ func NewAuthHandler(users *database.UserRepository, sessionManager *scs.SessionM
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Printf("login: failed to decode json: %v", err)
 		response.Error(w, http.StatusBadRequest, response.APIError{
 			Code:    "BAD_REQUEST",
@@ -49,8 +49,21 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.users.GetByUsername(req.Username)
+	if errors.Is(err, database.ErrNotFound) {
+		log.Printf("login: user not found: %q", req.Username)
+		response.Error(w, http.StatusUnauthorized, response.APIError{
+			Code:    "INVALID_CREDENTIALS",
+			Message: "Invalid username or password.",
+		})
+		return
+	}
 	if err != nil {
-		log.Printf("login: failed to get user: %v", err)
+		response.InternalError(w, "login: failed to get user", err)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		log.Printf("login: password mismatch for user %q: %v", req.Username, err)
 		response.Error(w, http.StatusUnauthorized, response.APIError{
 			Code:    "INVALID_CREDENTIALS",
 			Message: "Invalid username or password.",
@@ -58,45 +71,24 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reqPassword := []byte(req.Password)
-	hashedPassword := []byte(user.PasswordHash)
-	err = bcrypt.CompareHashAndPassword(hashedPassword, reqPassword)
-	if err != nil {
-		log.Printf("login: failed to verify password: %v", err)
-		response.Error(w, http.StatusUnauthorized, response.APIError{
-			Code:    "INVALID_CREDENTIALS",
-			Message: "Invalid username or password.",
-		})
+	if err := h.sessionManager.RenewToken(r.Context()); err != nil {
+		response.InternalError(w, "login: failed to renew session token", err)
 		return
 	}
 
-	err = h.sessionManager.RenewToken(r.Context())
-	if err != nil {
-		log.Printf("login: failed to renew session data: %v", err)
-		response.Error(w, http.StatusInternalServerError, response.APIError{
-			Code:    "INTERNAL_ERROR",
-			Message: "An unexpected error occured. Please try again later.",
-		})
-		return
-	}
-
-	h.sessionManager.Put(r.Context(), session.DefaultUserIDKey, user.Id)
+	h.sessionManager.Put(r.Context(), session.DefaultUserIDKey, user.ID)
 
 	resp := AuthResponse{
-		Id:        user.Id,
+		ID:        user.ID,
 		Username:  user.Username,
-		CreatedAt: user.CreateAt,
+		CreatedAt: user.CreatedAt,
 	}
 	response.Success(w, http.StatusOK, resp)
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if err := h.sessionManager.Destroy(r.Context()); err != nil {
-		log.Printf("logout: failed to destroy session data: %v", err)
-		response.Error(w, http.StatusInternalServerError, response.APIError{
-			Code:    "INTERNAL_ERROR",
-			Message: "An unexpected error occured. Please try again later.",
-		})
+		response.InternalError(w, "logout: failed to destroy session token", err)
 		return
 	}
 
@@ -104,19 +96,22 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	userId := h.sessionManager.GetInt(r.Context(), session.DefaultUserIDKey)
+	userID := h.sessionManager.GetInt64(r.Context(), session.DefaultUserIDKey)
 
-	user, err := h.users.GetById(userId)
-	if err != nil {
-		log.Printf("logout: failed to get user from database: %v", err)
+	user, err := h.users.GetByID(userID)
+	if errors.Is(err, database.ErrNotFound) {
+		log.Printf("me: user not found for session user id %d", userID)
 		response.Error(w, http.StatusNotFound, response.APIError{
 			Code:    "USER_NOT_FOUND",
 			Message: "User does not exist.",
 		})
 		return
 	}
+	if err != nil {
+		response.InternalError(w, "me: failed to get user from database", err)
+		return
+	}
 
-	resp := AuthResponse{Id: user.Id, Username: user.Username, CreatedAt: user.CreateAt}
-
+	resp := AuthResponse{ID: user.ID, Username: user.Username, CreatedAt: user.CreatedAt}
 	response.Success(w, http.StatusOK, resp)
 }

@@ -1,6 +1,8 @@
 package database
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -9,11 +11,13 @@ import (
 )
 
 type User struct {
-	Id           int
+	ID           int64
 	Username     string
 	PasswordHash string
-	CreateAt     time.Time
+	CreatedAt    time.Time
 }
+
+var ErrNotFound = errors.New("not found")
 
 type UserRepository struct {
 	db *DB
@@ -26,31 +30,47 @@ func NewUserRepository(db *DB) *UserRepository {
 }
 
 func (r *UserRepository) GetByUsername(username string) (*User, error) {
+	query := `
+		SELECT id, username, password_hash, created_at
+		FROM users
+		WHERE username = ?
+	`
+
 	var user User
-	query := "SELECT id, username, password_hash, created_at FROM users WHERE username = ?"
 	err := r.db.Conn().QueryRow(query, username).Scan(
-		&user.Id,
+		&user.ID,
 		&user.Username,
 		&user.PasswordHash,
-		&user.CreateAt,
+		&user.CreatedAt,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 
 	return &user, nil
 }
 
-func (r *UserRepository) GetById(id int) (*User, error) {
+func (r *UserRepository) GetByID(id int64) (*User, error) {
+	query := `
+		SELECT id, username, password_hash, created_at
+		FROM users
+		WHERE id = ?
+	`
+
 	var user User
-	query := "SELECT id, username, password_hash, created_at FROM users WHERE id = ?"
 	err := r.db.Conn().QueryRow(query, id).Scan(
-		&user.Id,
+		&user.ID,
 		&user.Username,
 		&user.PasswordHash,
-		&user.CreateAt,
+		&user.CreatedAt,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -62,14 +82,28 @@ func (r *UserRepository) CreateAdmin(username, password string) error {
 	if err != nil {
 		return fmt.Errorf("hashing password: %w", err)
 	}
-	_, err = r.db.Conn().Exec("INSERT INTO users (username, password_hash) VALUES (?, ?)", username, string(hash))
-	return err
+
+	query := `
+		INSERT INTO users (username, password_hash, created_at)
+		VALUES (?, ?, ?)
+	`
+
+	_, err = r.db.Conn().Exec(query, username, string(hash), time.Now().UTC())
+	if err != nil {
+		return fmt.Errorf("inserting admin user: %w", err)
+	}
+
+	return nil
 }
 
 func (r *UserRepository) SeedAdmin() error {
+	query := `
+		SELECT COUNT(*)
+		FROM users
+	`
+
 	var count int
-	db := r.db.Conn()
-	if err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count); err != nil {
+	if err := r.db.Conn().QueryRow(query).Scan(&count); err != nil {
 		return err
 	}
 
