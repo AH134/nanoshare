@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -28,19 +28,21 @@ type AuthResponse struct {
 type AuthHandler struct {
 	users          *database.UserRepository
 	sessionManager *scs.SessionManager
+	logger         *slog.Logger
 }
 
-func NewAuthHandler(users *database.UserRepository, sessionManager *scs.SessionManager) *AuthHandler {
+func NewAuthHandler(users *database.UserRepository, sessionManager *scs.SessionManager, logger *slog.Logger) *AuthHandler {
 	return &AuthHandler{
 		users:          users,
 		sessionManager: sessionManager,
+		logger:         logger.With("handler", "auth"),
 	}
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("login: failed to decode json: %v", err)
+		h.logger.Error("failed to decode login request body", "err", err)
 		response.Error(w, http.StatusBadRequest, response.APIError{
 			Code:    "BAD_REQUEST",
 			Message: "Invalid JSON payload.",
@@ -50,7 +52,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.users.GetByUsername(req.Username)
 	if errors.Is(err, database.ErrNotFound) {
-		log.Printf("login: user not found: %q", req.Username)
+		h.logger.Warn("user not found", "username", req.Username)
 		response.Error(w, http.StatusUnauthorized, response.APIError{
 			Code:    "INVALID_CREDENTIALS",
 			Message: "Invalid username or password.",
@@ -58,12 +60,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		response.InternalError(w, "login: failed to get user", err)
+		response.InternalError(w, h.logger, "failed to get user", err)
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		log.Printf("login: password mismatch for user %q: %v", req.Username, err)
+		h.logger.Warn("password mismatch", "username", req.Username)
 		response.Error(w, http.StatusUnauthorized, response.APIError{
 			Code:    "INVALID_CREDENTIALS",
 			Message: "Invalid username or password.",
@@ -72,7 +74,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.sessionManager.RenewToken(r.Context()); err != nil {
-		response.InternalError(w, "login: failed to renew session token", err)
+		response.InternalError(w, h.logger, "failed to renew session token", err)
 		return
 	}
 
@@ -88,7 +90,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if err := h.sessionManager.Destroy(r.Context()); err != nil {
-		response.InternalError(w, "logout: failed to destroy session token", err)
+		response.InternalError(w, h.logger, "failed to destroy session token", err)
 		return
 	}
 
@@ -100,7 +102,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.users.GetByID(userID)
 	if errors.Is(err, database.ErrNotFound) {
-		log.Printf("me: user not found for session user id %d", userID)
+		h.logger.Warn("user not found", "user_id", userID)
 		response.Error(w, http.StatusNotFound, response.APIError{
 			Code:    "USER_NOT_FOUND",
 			Message: "User does not exist.",
@@ -108,7 +110,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		response.InternalError(w, "me: failed to get user from database", err)
+		response.InternalError(w, h.logger, "failed to get user", err)
 		return
 	}
 

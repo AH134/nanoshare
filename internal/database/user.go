@@ -17,8 +17,6 @@ type User struct {
 	CreatedAt    time.Time
 }
 
-var ErrNotFound = errors.New("not found")
-
 type UserRepository struct {
 	db *DB
 }
