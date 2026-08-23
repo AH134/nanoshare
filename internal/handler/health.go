@@ -1,14 +1,15 @@
 package handler
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
+
+	"github.com/AH134/nanoshare/internal/response"
 )
 
+type HealthResponse struct {
+	Status string `json:"status"`
+}
+
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
-		log.Printf("health check: failed to encode response: %v", err)
-	}
+	response.Success(w, http.StatusOK, HealthResponse{Status: "ok"})
 }
