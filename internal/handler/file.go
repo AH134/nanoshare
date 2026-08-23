@@ -126,6 +126,14 @@ func (h *FileHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	links, err := h.links.GetAllByFileIDs(fileIDs)
+	if err != nil {
+		h.logger.Error("failed to get links by fileID", "file_id", userID, "error", err)
+		response.Error(w, http.StatusInternalServerError, response.APIError{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to fetch links.",
+		})
+		return
+	}
 
 	for _, link := range links {
 		if file, ok := fileByID[link.FileID]; ok {
