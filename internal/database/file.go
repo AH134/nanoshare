@@ -1,18 +1,21 @@
 package database
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 )
 
 type UploadedFile struct {
-	ID               int       `json:"id"`
-	OwnerID          int       `json:"-"`
+	ID               int64     `json:"id"`
+	OwnerID          int64     `json:"-"`
 	OriginalFilename string    `json:"originalFilename"`
 	StorageKey       string    `json:"-"`
 	SizeBytes        int64     `json:"sizeBytes"`
 	MimeType         string    `json:"mimeType"`
 	UploadedAt       time.Time `json:"uploadedAt"`
+	Links            []Link    `json:"links,omitempty"`
 }
 
 type FileRepository struct {
@@ -25,22 +28,44 @@ func NewFileRepository(db *DB) *FileRepository {
 	}
 }
 
-func (r *FileRepository) Create(file *UploadedFile) error {
-	query := "INSERT INTO files (owner_id, original_filename, storage_key, size_bytes, mime_type, uploaded_at) VALUES (?, ?, ?, ?, ?, ?)"
+func (r *FileRepository) Create(file UploadedFile) (*UploadedFile, error) {
+	file.UploadedAt = time.Now().UTC()
 
-	_, err := r.db.Conn().Exec(query, file.OwnerID, file.OriginalFilename, file.StorageKey, file.SizeBytes, file.MimeType, file.UploadedAt)
+	query := `
+		INSERT INTO files (owner_id, original_filename, storage_key, size_bytes, mime_type, uploaded_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+		`
+
+	result, err := r.db.Conn().Exec(query,
+		file.OwnerID,
+		file.OriginalFilename,
+		file.StorageKey,
+		file.SizeBytes,
+		file.MimeType,
+		file.UploadedAt,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to insert uploaded file: %w", err)
+		return nil, fmt.Errorf("inserting file: %w", err)
 	}
 
-	return nil
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("getting inserted file: %w", err)
+	}
+
+	file.ID = id
+	return &file, nil
 }
 
-func (r *FileRepository) GetByID(id int) (*UploadedFile, error) {
-	var file UploadedFile
-	query := "SELECT id, owner_id, original_filename, storage_key, size_bytes, mime_type, uploaded_at FROM files WHERE id = ?"
+func (r *FileRepository) GetByID(id int64) (*UploadedFile, error) {
+	query := `
+		SELECT id, owner_id, original_filename, storage_key, size_bytes, mime_type, uploaded_at
+		FROM files
+		WHERE id = ?
+	`
 
-	err := r.db.Conn().QueryRow(query, id).Scan(
+	var file UploadedFile
+	if err := r.db.Conn().QueryRow(query, id).Scan(
 		&file.ID,
 		&file.OwnerID,
 		&file.OriginalFilename,
@@ -48,45 +73,48 @@ func (r *FileRepository) GetByID(id int) (*UploadedFile, error) {
 		&file.SizeBytes,
 		&file.MimeType,
 		&file.UploadedAt,
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to get file with id %d: %w", id, err)
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("getting file: %w", err)
 	}
 
 	return &file, nil
 }
 
-func (r *FileRepository) GetAllByOwnerID(ownerID int) ([]*UploadedFile, error) {
-	query := "SELECT id, owner_id, original_filename, storage_key, size_bytes, mime_type, uploaded_at FROM files WHERE owner_id = ?"
+func (r *FileRepository) GetAllByOwnerID(ownerID int64) ([]UploadedFile, error) {
+	query := `
+		SELECT id, owner_id, original_filename, storage_key, size_bytes, mime_type, uploaded_at
+		FROM files
+		WHERE owner_id = ?
+	`
 
 	rows, err := r.db.Conn().Query(query, ownerID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch files for owner %d: %w", ownerID, err)
+		return nil, fmt.Errorf("querying files: %w", err)
 	}
 	defer rows.Close()
 
-	var files []*UploadedFile
+	files := make([]UploadedFile, 0)
 	for rows.Next() {
-		var file UploadedFile
-		err := rows.Scan(
-			&file.ID,
-			&file.OwnerID,
-			&file.OriginalFilename,
-			&file.StorageKey,
-			&file.SizeBytes,
-			&file.MimeType,
-			&file.UploadedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan file row: %w", err)
+		var f UploadedFile
+		if err := rows.Scan(
+			&f.ID,
+			&f.OwnerID,
+			&f.OriginalFilename,
+			&f.StorageKey,
+			&f.SizeBytes,
+			&f.MimeType,
+			&f.UploadedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning file row: %w", err)
 		}
-
-		files = append(files, &file)
+		files = append(files, f)
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate through file rows: %w", err)
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating file rows: %w", err)
 	}
 
 	return files, nil

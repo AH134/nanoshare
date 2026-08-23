@@ -42,7 +42,7 @@ func NewAuthHandler(users *database.UserRepository, sessionManager *scs.SessionM
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error("failed to decode login request body", "err", err)
+		h.logger.Warn("failed to decode login request body", "error", err)
 		response.Error(w, http.StatusBadRequest, response.APIError{
 			Code:    "BAD_REQUEST",
 			Message: "Invalid JSON payload.",
@@ -52,7 +52,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.users.GetByUsername(req.Username)
 	if errors.Is(err, database.ErrNotFound) {
-		h.logger.Warn("user not found", "username", req.Username)
+		h.logger.Warn("user not found", "username", req.Username, "error", err)
 		response.Error(w, http.StatusUnauthorized, response.APIError{
 			Code:    "INVALID_CREDENTIALS",
 			Message: "Invalid username or password.",
@@ -65,7 +65,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		h.logger.Warn("password mismatch", "username", req.Username)
+		h.logger.Warn("password mismatch", "username", req.Username, "error", err)
 		response.Error(w, http.StatusUnauthorized, response.APIError{
 			Code:    "INVALID_CREDENTIALS",
 			Message: "Invalid username or password.",
@@ -102,7 +102,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.users.GetByID(userID)
 	if errors.Is(err, database.ErrNotFound) {
-		h.logger.Warn("user not found", "user_id", userID)
+		h.logger.Warn("user not found", "user_id", userID, "error", err)
 		response.Error(w, http.StatusNotFound, response.APIError{
 			Code:    "USER_NOT_FOUND",
 			Message: "User does not exist.",

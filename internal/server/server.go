@@ -51,8 +51,8 @@ func (a *Application) Mount() http.Handler {
 
 	// handlers
 	authHandler := handler.NewAuthHandler(a.userRepo, a.sessionManager, a.logger)
-	storageHandler := handler.NewStorageHandler(fileRepo, a.sessionManager, a.storage)
-	linkHandler := handler.NewLinkHandler(linkRepo, fileRepo, a.sessionManager, a.storage)
+	fileHandler := handler.NewFileHandler(fileRepo, a.sessionManager, a.storage, a.logger)
+	linkHandler := handler.NewLinkHandler(linkRepo, fileRepo, a.sessionManager, a.storage, a.logger)
 
 	// middlewares
 	mwChain := middleware.Chain(
@@ -68,8 +68,8 @@ func (a *Application) Mount() http.Handler {
 	r.HandleFunc("POST /api/auth/login", authHandler.Login)
 	r.Handle("POST /api/auth/logout", requireAuth(http.HandlerFunc(authHandler.Logout)))
 
-	r.Handle("GET /api/files", requireAuth(http.HandlerFunc(storageHandler.ListFiles)))
-	r.Handle("POST /api/files", requireAuth(http.HandlerFunc(storageHandler.Upload)))
+	r.Handle("GET /api/files", requireAuth(http.HandlerFunc(fileHandler.List)))
+	r.Handle("POST /api/files", requireAuth(http.HandlerFunc(fileHandler.Upload)))
 
 	r.Handle("POST /api/files/{id}/links", requireAuth(http.HandlerFunc(linkHandler.Create)))
 

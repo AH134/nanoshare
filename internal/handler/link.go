@@ -2,22 +2,24 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/AH134/nanoshare/internal/database"
+	"github.com/AH134/nanoshare/internal/response"
 	"github.com/AH134/nanoshare/internal/storage"
 	"github.com/AH134/nanoshare/internal/token"
 	"github.com/alexedwards/scs/v2"
 )
 
 type LinkRequest struct {
-	MaxDownloads *int       `json:"maxDownloads"`
+	MaxDownloads *int64     `json:"maxDownloads"`
 	ExpiresAt    *time.Time `json:"expiresAt"`
 }
 
@@ -26,41 +28,55 @@ type LinkHandler struct {
 	files          *database.FileRepository
 	sessionManager *scs.SessionManager
 	storage        storage.Storage
+	logger         *slog.Logger
 }
 
-func NewLinkHandler(links *database.LinkRepository, files *database.FileRepository, sessionManager *scs.SessionManager, storage storage.Storage) *LinkHandler {
+func NewLinkHandler(links *database.LinkRepository, files *database.FileRepository, sessionManager *scs.SessionManager, storage storage.Storage, logger *slog.Logger) *LinkHandler {
 	return &LinkHandler{
 		links:          links,
 		files:          files,
 		sessionManager: sessionManager,
 		storage:        storage,
+		logger:         logger.With("handler", "link"),
 	}
 }
 
 func (h *LinkHandler) Create(w http.ResponseWriter, r *http.Request) {
 	value := r.PathValue("id")
-	intValue, err := strconv.Atoi(value)
+	fileID, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		http.Error(w, "invalid file id", http.StatusBadRequest)
+		h.logger.Warn("failed to parse file id", "file_id", fileID, "error", err)
+		response.Error(w, http.StatusBadRequest, response.APIError{
+			Code:    "BAD_REQUEST",
+			Message: "Failed to parse file id.",
+		})
 		return
 	}
 
-	file, err := h.files.GetByID(intValue)
+	file, err := h.files.GetByID(fileID)
 	if err != nil {
-		http.Error(w, "file not found", http.StatusNotFound)
+		h.logger.Warn("file not found", "file_id", fileID, "error", err)
+		response.Error(w, http.StatusNotFound, response.APIError{
+			Code:    "NOT_FOUND",
+			Message: "Failed to fetch file",
+		})
 		return
 	}
 
 	var req LinkRequest
 	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Failed to process request body", http.StatusBadRequest)
+		h.logger.Warn("failed to decode link request body", "error", err)
+		response.Error(w, http.StatusBadRequest, response.APIError{
+			Code:    "BAD_REQUEST",
+			Message: "Invalid JSON payload",
+		})
 		return
 	}
 
 	var maxDownloads database.Nullable[int64]
 	if req.MaxDownloads != nil {
 		maxDownloads.Valid = true
-		maxDownloads.V = int64(*req.MaxDownloads)
+		maxDownloads.V = *req.MaxDownloads
 	}
 
 	var expiresAt database.Nullable[time.Time]
@@ -72,58 +88,71 @@ func (h *LinkHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	linkToken, err := token.Generate(token.DefaultLength)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		response.InternalError(w, h.logger, "failed to generate token for file", err)
 		return
 	}
 
-	link := &database.Link{
+	createdLink, err := h.links.Create(database.Link{
 		FileID:       file.ID,
 		Token:        linkToken,
 		MaxDownloads: maxDownloads,
 		ExpiresAt:    expiresAt,
-	}
-
-	if err := h.links.Create(link); err != nil {
-		http.Error(w, "failed to upload link", http.StatusInternalServerError)
-		return
-	}
-
-	createdLink, err := h.links.GetByToken(linkToken)
+	})
 	if err != nil {
-		http.Error(w, "failed to fetch link", http.StatusNotFound)
+		response.InternalError(w, h.logger, "failed to save link to database", err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(createdLink); err != nil {
-		log.Printf("create link: failed to encode response: %v", err)
-	}
+	response.Success(w, http.StatusCreated, createdLink)
 }
 
 func (h *LinkHandler) Download(w http.ResponseWriter, r *http.Request) {
-	value := r.PathValue("token")
+	token := r.PathValue("token")
 
-	link, err := h.links.GetByToken(value)
+	link, err := h.links.GetByToken(token)
+	if errors.Is(err, database.ErrNotFound) {
+		h.logger.Warn("link not found", "token", token, "error", err)
+		response.Error(w, http.StatusNotFound, response.APIError{
+			Code:    "NOT_FOUND",
+			Message: fmt.Sprintf("No link with token %s.", token),
+		})
+		return
+	}
 	if err != nil {
-		http.Error(w, "failed to fetch link", http.StatusNotFound)
+		response.InternalError(w, h.logger, "failed to get link", err)
 		return
 	}
 
 	validLink := link.IsValid()
 	if !validLink {
-		http.Error(w, "this link is no longer available", http.StatusGone)
+		response.Error(w, http.StatusGone, response.APIError{
+			Code:    "GONE",
+			Message: "This link is no longer available.",
+		})
 		return
 	}
 
 	file, err := h.files.GetByID(link.FileID)
+	if errors.Is(err, database.ErrNotFound) {
+		h.logger.Warn("file not found", "error", err)
+		response.Error(w, http.StatusNotFound, response.APIError{
+			Code:    "NOT_FOUND",
+			Message: fmt.Sprintf("No file with associated link with token %s.", token),
+		})
+		return
+	}
 	if err != nil {
-		http.Error(w, "failed to fetch file", http.StatusInternalServerError)
+		response.InternalError(w, h.logger, "failed to get file", err)
 		return
 	}
 
 	storageFile, err := h.storage.Open(r.Context(), file.StorageKey)
 	if err != nil {
-		http.Error(w, "failed to fetch file", http.StatusInternalServerError)
+		h.logger.Error("failed to open file from storage", "storage_key", file.StorageKey, "error", err)
+		response.Error(w, http.StatusInternalServerError, response.APIError{
+			Code:    "INTERNAL_ERROR",
+			Message: "An error occurred while trying to fetch uploaded file.",
+		})
 		return
 	}
 	defer storageFile.Close()
@@ -137,12 +166,12 @@ func (h *LinkHandler) Download(w http.ResponseWriter, r *http.Request) {
 
 	seeker, ok := storageFile.(io.ReadSeeker)
 	if !ok {
-		http.Error(w, "stream does not support seeking", http.StatusInternalServerError)
+		response.InternalError(w, h.logger, "stream does not support seeking", err)
 		return
 	}
 
 	if err := h.links.IncrementDownloadCount(link.ID); err != nil {
-		log.Printf("failed to increment download count for link %d: %v", link.ID, err)
+		h.logger.Warn("failed to increment download count", "link_id", link.ID, "error", err)
 	}
 
 	http.ServeContent(w, r, "", time.Now(), seeker)

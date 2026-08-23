@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -20,11 +21,11 @@ func (n Nullable[T]) MarshalJSON() ([]byte, error) {
 }
 
 type Link struct {
-	ID            int                 `json:"id"`
-	FileID        int                 `json:"fileID"`
+	ID            int64               `json:"id"`
+	FileID        int64               `json:"fileID"`
 	Token         string              `json:"token"`
 	MaxDownloads  Nullable[int64]     `json:"maxDownloads"`
-	DownloadCount int                 `json:"downloadCount"`
+	DownloadCount int64               `json:"downloadCount"`
 	CreatedAt     time.Time           `json:"createdAt"`
 	ExpiresAt     Nullable[time.Time] `json:"expiresAt"`
 	RevokedAt     Nullable[time.Time] `json:"revokedAt"`
@@ -44,7 +45,7 @@ func (l *Link) IsValid() bool {
 		return false
 	}
 
-	if maxDownloads.Valid && int(maxDownloads.V) <= downloadCount {
+	if maxDownloads.Valid && maxDownloads.V <= downloadCount {
 		return false
 	}
 
@@ -61,22 +62,43 @@ func NewLinkRepository(db *DB) *LinkRepository {
 	}
 }
 
-func (r *LinkRepository) Create(link *Link) error {
-	query := "INSERT INTO links (file_id, token, max_downloads, expires_at) VALUES (?, ?, ?, ?)"
+func (r *LinkRepository) Create(link Link) (*Link, error) {
+	link.CreatedAt = time.Now().UTC()
 
-	_, err := r.db.Conn().Exec(query, link.FileID, link.Token, link.MaxDownloads, link.ExpiresAt)
+	query := `
+		INSERT INTO links (file_id, token, max_downloads, created_at, expires_at)
+		VALUES (?, ?, ?, ?, ?)
+	`
+
+	result, err := r.db.Conn().Exec(query,
+		link.FileID,
+		link.Token,
+		link.MaxDownloads,
+		link.CreatedAt,
+		link.ExpiresAt,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to insert link: %w", err)
+		return nil, fmt.Errorf("failed to insert link: %w", err)
 	}
 
-	return nil
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("getting inserted link: %w", err)
+	}
+
+	link.ID = id
+	return &link, nil
 }
 
 func (r *LinkRepository) GetByToken(token string) (*Link, error) {
-	var link Link
+	query := `
+		SELECT id, file_id, token, max_downloads, download_count, created_at, expires_at, revoked_at
+		FROM links
+		WHERE token = ?
+	`
 
-	query := "SELECT id, file_id, token, max_downloads, download_count, created_at, expires_at, revoked_at FROM links WHERE token = ?"
-	err := r.db.Conn().QueryRow(query, token).Scan(
+	var link Link
+	if err := r.db.Conn().QueryRow(query, token).Scan(
 		&link.ID,
 		&link.FileID,
 		&link.Token,
@@ -85,28 +107,42 @@ func (r *LinkRepository) GetByToken(token string) (*Link, error) {
 		&link.CreatedAt,
 		&link.ExpiresAt,
 		&link.RevokedAt,
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed ot get link with token %s: %w", token, err)
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("gettin link with token %s: %w", token, err)
 	}
+
 	return &link, nil
 }
 
-func (r *LinkRepository) Revoke(id int) error {
-	query := "UPDATE links SET revoked_at = ? WHERE id = ?"
+func (r *LinkRepository) Revoke(id int64) error {
+	query := `
+		UPDATE links
+		SET revoked_at = ?
+		WHERE id = ?
+	`
+
 	_, err := r.db.Conn().Exec(query, time.Now(), id)
 	if err != nil {
-		return fmt.Errorf("failed to update revoked_at attribute for link %d: %w", id, err)
+		return fmt.Errorf("setting revoked_at attribute for link %d: %w", id, err)
 	}
+
 	return nil
 }
 
-func (r *LinkRepository) IncrementDownloadCount(id int) error {
-	query := "UPDATE links SET download_count = download_count + 1 WHERE id = ?"
+func (r *LinkRepository) IncrementDownloadCount(id int64) error {
+	query := `
+		UPDATE links
+		SET download_count = download_count + 1
+		WHERE id = ?
+	`
+
 	_, err := r.db.Conn().Exec(query, id)
 	if err != nil {
-		return fmt.Errorf("failed to update download_count attribute for link %d: %w", id, err)
+		return fmt.Errorf("setting download_count attribute for link %d: %w", id, err)
 	}
+
 	return nil
 }

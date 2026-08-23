@@ -40,7 +40,7 @@ func Error(w http.ResponseWriter, statusCode int, apiErr APIError) {
 }
 
 func InternalError(w http.ResponseWriter, logger *slog.Logger, msg string, err error) {
-	logger.Error(msg, "err", err)
+	logger.Error(msg, "error", err)
 	Error(w, http.StatusInternalServerError, APIError{
 		Code:    "INTERNAL_ERROR",
 		Message: "An unexpected error occurred. Please try again later.",
