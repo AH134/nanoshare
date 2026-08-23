@@ -50,7 +50,7 @@ func (a *Application) Mount() http.Handler {
 	linkRepo := database.NewLinkRepository(a.db)
 
 	// handlers
-	authHandler := handler.NewAuthHandler(a.userRepo, a.sessionManager)
+	authHandler := handler.NewAuthHandler(a.userRepo, a.sessionManager, a.logger)
 	storageHandler := handler.NewStorageHandler(fileRepo, a.sessionManager, a.storage)
 	linkHandler := handler.NewLinkHandler(linkRepo, fileRepo, a.sessionManager, a.storage)
 

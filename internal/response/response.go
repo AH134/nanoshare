@@ -2,7 +2,7 @@ package response
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -39,8 +39,8 @@ func Error(w http.ResponseWriter, statusCode int, apiErr APIError) {
 	})
 }
 
-func InternalError(w http.ResponseWriter, logContext string, err error) {
-	log.Printf("%s: %v", logContext, err)
+func InternalError(w http.ResponseWriter, logger *slog.Logger, msg string, err error) {
+	logger.Error(msg, "err", err)
 	Error(w, http.StatusInternalServerError, APIError{
 		Code:    "INTERNAL_ERROR",
 		Message: "An unexpected error occurred. Please try again later.",
