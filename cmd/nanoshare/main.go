@@ -2,12 +2,15 @@ package main
 
 import (
 	"log"
+	"log/slog"
+	"os"
 
 	"github.com/AH134/nanoshare/internal/config"
 	"github.com/AH134/nanoshare/internal/database"
 	"github.com/AH134/nanoshare/internal/server"
 	"github.com/AH134/nanoshare/internal/session"
 	"github.com/AH134/nanoshare/internal/storage"
+	"github.com/lmittmann/tint"
 )
 
 func main() {
@@ -15,6 +18,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	logger := slog.New(tint.NewTextHandler(os.Stderr, nil))
 
 	storage, err := storage.NewLocalStorage(cfg.StoragePath)
 	if err != nil {
@@ -37,7 +42,7 @@ func main() {
 
 	sessionManager := session.New(db.Conn(), cfg.Prod)
 
-	app := server.NewApplication(db, userRepo, sessionManager, storage, cfg)
+	app := server.NewApplication(db, userRepo, sessionManager, storage, cfg, logger)
 
 	if err := app.Run(app.Mount()); err != nil {
 		log.Fatalf("nanoshare has failed to start: %s", err)

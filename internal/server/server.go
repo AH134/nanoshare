@@ -2,8 +2,9 @@ package server
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/AH134/nanoshare/internal/config"
@@ -21,15 +22,17 @@ type Application struct {
 	sessionManager *scs.SessionManager
 	storage        storage.Storage
 	config         *config.EnvConfig
+	logger         *slog.Logger
 }
 
-func NewApplication(db *database.DB, userRepo *database.UserRepository, sm *scs.SessionManager, storage storage.Storage, cfg *config.EnvConfig) *Application {
+func NewApplication(db *database.DB, userRepo *database.UserRepository, sm *scs.SessionManager, storage storage.Storage, cfg *config.EnvConfig, logger *slog.Logger) *Application {
 	return &Application{
 		db:             db,
 		userRepo:       userRepo,
 		sessionManager: sm,
 		storage:        storage,
 		config:         cfg,
+		logger:         logger,
 	}
 }
 
@@ -38,7 +41,8 @@ func (a *Application) Mount() http.Handler {
 
 	spaHandler, err := handler.SpaHandler(ui.DistFS)
 	if err != nil {
-		log.Panicf("failed to initialized spa handler: %v", err)
+		a.logger.Error("initializing spa handler", "err", err)
+		os.Exit(1)
 	}
 
 	// db repositories
@@ -52,7 +56,7 @@ func (a *Application) Mount() http.Handler {
 
 	// middlewares
 	mwChain := middleware.Chain(
-		middleware.Logging,
+		middleware.Logging(a.logger),
 		a.sessionManager.LoadAndSave,
 	)
 	requireAuth := middleware.RequireAuth(a.sessionManager)
@@ -86,6 +90,7 @@ func (a *Application) Run(h http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("nanoshare has started at addr %s", addr)
+	// log.Printf("nanoshare has started at addr %s", addr)
+	a.logger.Info("nanoshare started", "addr", addr)
 	return srv.ListenAndServe()
 }
