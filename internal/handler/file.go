@@ -17,14 +17,16 @@ const DefaultFileKey = "file"
 
 type FileHandler struct {
 	files          *database.FileRepository
+	links          *database.LinkRepository
 	sessionManager *scs.SessionManager
 	storage        storage.Storage
 	logger         *slog.Logger
 }
 
-func NewFileHandler(files *database.FileRepository, sessionManager *scs.SessionManager, storage storage.Storage, logger *slog.Logger) *FileHandler {
+func NewFileHandler(files *database.FileRepository, links *database.LinkRepository, sessionManager *scs.SessionManager, storage storage.Storage, logger *slog.Logger) *FileHandler {
 	return &FileHandler{
 		files:          files,
+		links:          links,
 		sessionManager: sessionManager,
 		storage:        storage,
 		logger:         logger.With("handler", "file"),
@@ -114,6 +116,21 @@ func (h *FileHandler) List(w http.ResponseWriter, r *http.Request) {
 			Message: "Failed to fetch files.",
 		})
 		return
+	}
+
+	fileIDs := make([]int64, len(files))
+	fileByID := make(map[int64]*database.UploadedFile, len(files))
+	for i := range files {
+		fileIDs[i] = files[i].ID
+		fileByID[files[i].ID] = &files[i]
+	}
+
+	links, err := h.links.GetAllByFileIDs(fileIDs)
+
+	for _, link := range links {
+		if file, ok := fileByID[link.FileID]; ok {
+			file.Links = append(file.Links, link)
+		}
 	}
 
 	response.Success(w, http.StatusOK, files)

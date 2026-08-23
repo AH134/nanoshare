@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -88,6 +89,57 @@ func (r *LinkRepository) Create(link Link) (*Link, error) {
 
 	link.ID = id
 	return &link, nil
+}
+
+func (r *LinkRepository) GetAllByFileIDs(fileIDs []int64) ([]Link, error) {
+	if len(fileIDs) == 0 {
+		return nil, nil
+	}
+
+	placeholders := make([]string, len(fileIDs))
+	args := make([]any, len(fileIDs))
+	for i, id := range fileIDs {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	inClause := strings.Join(placeholders, ", ")
+	query := `
+		SELECT id, file_id, token, max_downloads, download_count, created_at, expires_at, revoked_at
+		FROM links
+		WHERE file_id IN (` + inClause + `)
+		ORDER BY created_at ASC
+	`
+
+	rows, err := r.db.Conn().Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying links: %w", err)
+	}
+	defer rows.Close()
+
+	links := make([]Link, 0)
+	for rows.Next() {
+		var l Link
+		if err := rows.Scan(
+			&l.ID,
+			&l.FileID,
+			&l.Token,
+			&l.MaxDownloads,
+			&l.DownloadCount,
+			&l.CreatedAt,
+			&l.ExpiresAt,
+			&l.RevokedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning link row %w", err)
+		}
+		links = append(links, l)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating link rows: %w", err)
+	}
+
+	return links, nil
 }
 
 func (r *LinkRepository) GetByToken(token string) (*Link, error) {

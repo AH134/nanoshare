@@ -51,7 +51,7 @@ func (a *Application) Mount() http.Handler {
 
 	// handlers
 	authHandler := handler.NewAuthHandler(a.userRepo, a.sessionManager, a.logger)
-	fileHandler := handler.NewFileHandler(fileRepo, a.sessionManager, a.storage, a.logger)
+	fileHandler := handler.NewFileHandler(fileRepo, linkRepo, a.sessionManager, a.storage, a.logger)
 	linkHandler := handler.NewLinkHandler(linkRepo, fileRepo, a.sessionManager, a.storage, a.logger)
 
 	// middlewares

@@ -15,7 +15,7 @@ type UploadedFile struct {
 	SizeBytes        int64     `json:"sizeBytes"`
 	MimeType         string    `json:"mimeType"`
 	UploadedAt       time.Time `json:"uploadedAt"`
-	Links            []Link    `json:"links,omitempty"`
+	Links            []Link    `json:"links"`
 }
 
 type FileRepository struct {
@@ -54,6 +54,7 @@ func (r *FileRepository) Create(file UploadedFile) (*UploadedFile, error) {
 	}
 
 	file.ID = id
+	file.Links = make([]Link, 0)
 	return &file, nil
 }
 
@@ -80,6 +81,7 @@ func (r *FileRepository) GetByID(id int64) (*UploadedFile, error) {
 		return nil, fmt.Errorf("getting file: %w", err)
 	}
 
+	file.Links = make([]Link, 0)
 	return &file, nil
 }
 
@@ -110,6 +112,7 @@ func (r *FileRepository) GetAllByOwnerID(ownerID int64) ([]UploadedFile, error) 
 		); err != nil {
 			return nil, fmt.Errorf("scanning file row: %w", err)
 		}
+		f.Links = make([]Link, 0)
 		files = append(files, f)
 	}
 
