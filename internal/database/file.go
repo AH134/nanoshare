@@ -87,7 +87,7 @@ func (r *FileRepository) GetByID(id int64) (*UploadedFile, error) {
 
 func (r *FileRepository) DeleteByID(id int64) error {
 	query := `
-	DELTED FROM files
+	DELETE FROM files
 	WHERE id = ?
 	`
 
@@ -106,6 +106,24 @@ func (r *FileRepository) DeleteByID(id int64) error {
 	}
 
 	return nil
+}
+
+func (r *FileRepository) GetStorageKey(id int64) (string, error) {
+	query := `
+		SELECT storage_key
+		FROM files
+		WHERE id = ?
+	`
+
+	var storageKey string
+	if err := r.db.Conn().QueryRow(query, id).Scan(&storageKey); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		return "", err
+	}
+
+	return storageKey, nil
 }
 
 func (r *FileRepository) GetAllByOwnerID(ownerID int64) ([]UploadedFile, error) {

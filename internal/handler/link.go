@@ -45,7 +45,7 @@ func (h *LinkHandler) Create(w http.ResponseWriter, r *http.Request) {
 	value := r.PathValue("id")
 	fileID, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		h.logger.Warn("failed to parse file id", "file_id", fileID, "error", err)
+		h.logger.Warn("failed to parse file id", "file_id", value, "error", err)
 		response.Error(w, http.StatusBadRequest, response.APIError{
 			Code:    "BAD_REQUEST",
 			Message: "Failed to parse file id.",

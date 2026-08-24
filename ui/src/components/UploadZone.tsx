@@ -15,13 +15,18 @@ export function UploadZone() {
     onDrop: async (acceptedFiles) => {
       for (const file of acceptedFiles) {
         try {
-          console.log(linkOptions);
           await uploadMutation.mutateAsync({
             file,
             linkOptions,
           });
         } catch (err) {
           console.error(err);
+        } finally {
+          setLinkOptions({
+            ...linkOptions,
+            maxDownloads: null,
+            expiresAt: null,
+          });
         }
       }
     },

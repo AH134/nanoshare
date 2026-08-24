@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/AH134/nanoshare/internal/database"
@@ -162,6 +163,48 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	uploadedFile.Links = append(uploadedFile.Links, *link)
 	response.Success(w, http.StatusCreated, uploadedFile)
+}
+
+func (h *FileHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	value := r.PathValue("id")
+	fileID, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		h.logger.Warn("failed to parse file id", "file_id", value, "error", err)
+		response.Error(w, http.StatusBadRequest, response.APIError{
+			Code:    "BAD_REQUEST",
+			Message: "Failed to parse file id",
+		})
+		return
+	}
+
+	storageKey, err := h.files.GetStorageKey(fileID)
+	if errors.Is(err, database.ErrNotFound) {
+		h.logger.Error("failed to look up file", "file_id", fileID, "error", err)
+		response.Error(w, http.StatusNotFound, response.APIError{
+			Code:    "NOT_FOUND",
+			Message: "File not found",
+		})
+		return
+	}
+	if err != nil {
+		h.logger.Error("failed to look up file", "file_id", fileID, "error", err)
+		response.InternalError(w, h.logger, "failed to delete file", err)
+		return
+	}
+
+	if err := h.storage.Delete(r.Context(), storageKey); err != nil {
+		h.logger.Error("failed to delete storage object", "storage_key", storageKey, "error", err)
+		response.InternalError(w, h.logger, "failed to delete file", err)
+		return
+	}
+
+	if err := h.files.DeleteByID(fileID); err != nil {
+		h.logger.Error("failed to delete file from database", "file_id", fileID, "error", err)
+		response.InternalError(w, h.logger, "failed to delete file", err)
+		return
+	}
+
+	response.Success(w, http.StatusOK, struct{}{})
 }
 
 func (h *FileHandler) List(w http.ResponseWriter, r *http.Request) {

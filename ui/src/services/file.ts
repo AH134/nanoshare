@@ -27,3 +27,9 @@ export async function uploadFile(
 export async function getFiles(): Promise<UploadedFile[]> {
   return request<UploadedFile[]>("/api/files");
 }
+
+export async function deleteFile(fileID: number): Promise<void> {
+  return request<void>(`/api/files/${fileID}`, {
+    method: "DELETE",
+  });
+}

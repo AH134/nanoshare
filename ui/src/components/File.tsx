@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { FileText, Trash2 } from "lucide-react";
 import prettyBytes from "pretty-bytes";
+import { useFiles } from "#/hooks/use-files";
 import type { UploadedFile } from "#/services/file";
 import { CopyLinkButton } from "./CopyLinkButton";
 
@@ -9,6 +10,16 @@ export interface FileProps {
 }
 
 export function File({ file }: FileProps) {
+  const { deleteMutation } = useFiles();
+
+  const handleDelete = async (fileID: number) => {
+    try {
+      await deleteMutation.mutateAsync(fileID);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const firstLink = file.links?.[0]
     ? `${window.location.origin}/d/${file.links[0].token}`
     : `${window.location.origin}/d/no-link`;
@@ -35,6 +46,7 @@ export function File({ file }: FileProps) {
           <button
             type="button"
             className="btn btn-square btn-ghost group hover:bg-error/20"
+            onClick={() => handleDelete(file.id)}
           >
             <Trash2 className="size-4 group-hover:text-error" />
           </button>

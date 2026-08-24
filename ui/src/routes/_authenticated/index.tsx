@@ -38,7 +38,7 @@ function RouteComponent() {
             <ArrowRight className="size-4" />
           </Link>
         </div>
-        {isLoading ? (
+        {isLoading || recentFiles.length <= 0 ? (
           <div className="rounded-box border border-base-300 text-center text-sm text-base-content/60 py-10 px-5">
             <p>No files have been uploaded yet.</p>
           </div>

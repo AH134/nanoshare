@@ -4,9 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { getFiles, uploadFile } from "#/services/file";
+import { deleteFile, getFiles, uploadFile } from "#/services/file";
 import type { LinkPayload } from "#/services/link";
-import { linkQueryOptions } from "./use-links";
 
 export const fileQueryOptions = queryOptions({
   queryKey: ["files"],
@@ -25,16 +24,13 @@ export function useFiles() {
       file: File;
       linkOptions: LinkPayload;
     }) => uploadFile(file, linkOptions),
-    onSuccess: (uploadedFile) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: fileQueryOptions.queryKey });
-      queryClient.invalidateQueries({
-        queryKey: linkQueryOptions(uploadedFile.id).queryKey,
-      });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {},
+    mutationFn: deleteFile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: fileQueryOptions.queryKey });
     },

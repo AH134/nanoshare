@@ -71,6 +71,8 @@ func (a *Application) Mount() http.Handler {
 	r.Handle("GET /api/files", requireAuth(http.HandlerFunc(fileHandler.List)))
 	r.Handle("POST /api/files", requireAuth(http.HandlerFunc(fileHandler.Upload)))
 
+	r.Handle("DELETE /api/files/{id}", requireAuth(http.HandlerFunc(fileHandler.Delete)))
+
 	r.Handle("POST /api/files/{id}/links", requireAuth(http.HandlerFunc(linkHandler.Create)))
 
 	r.HandleFunc("GET /d/{token}", linkHandler.Download)

@@ -35,8 +35,7 @@ export function LinkOptions({ options, onChange }: LinkOptionsProps) {
           </fieldset>
           <fieldset className="fieldset">
             <label className="label text-base-content" htmlFor="expiry-date">
-              Expiry date test={new Date().toISOString()}---
-              {/* {new Date().toUTCString()} */}
+              Expiry date
             </label>
             <input
               type="datetime-local"
