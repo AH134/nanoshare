@@ -12,8 +12,8 @@ export interface Link {
 }
 
 export interface LinkPayload {
-  maxDownloads?: number | null;
-  expiresAt?: string | null;
+  maxDownloads: number | null;
+  expiresAt: string | null;
 }
 
 export async function createLink(

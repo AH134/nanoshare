@@ -11,14 +11,14 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function RouteComponent() {
   const { files, isLoading } = useFiles();
-  const recentFiles = files?.slice(0, 10);
+  const recentFiles = files?.slice(-10).reverse() || [];
 
   return (
     <div>
       <PageTitle
         title="Upload your files"
-        description="Drag files into the zone below or click to browse. Set a download limit
-        and expiry date, then share the link."
+        description="Set a download limit
+        and expiry date, then drag your file(s) into the zone below or click to browse. Then share the link."
       />
       <UploadZone />
 

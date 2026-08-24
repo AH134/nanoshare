@@ -1,5 +1,5 @@
 import { request } from "./client";
-import type { Link } from "./link";
+import type { Link, LinkPayload } from "./link";
 
 export interface UploadedFile {
   id: number;
@@ -7,12 +7,17 @@ export interface UploadedFile {
   sizeBytes: number;
   mimeType: string;
   uploadedAt: string;
-  link: Link[];
+  links: Link[];
 }
 
-export async function uploadFile(file: File): Promise<UploadedFile> {
+export async function uploadFile(
+  file: File,
+  linkOptions: LinkPayload,
+): Promise<UploadedFile> {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("linkOptions", JSON.stringify(linkOptions));
+
   return request<UploadedFile>("/api/files", {
     method: "POST",
     body: formData,

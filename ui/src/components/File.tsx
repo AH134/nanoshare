@@ -1,7 +1,6 @@
 import dayjs from "dayjs";
 import { FileText, Trash2 } from "lucide-react";
 import prettyBytes from "pretty-bytes";
-import { useLinks } from "#/hooks/use-links";
 import type { UploadedFile } from "#/services/file";
 import { CopyLinkButton } from "./CopyLinkButton";
 
@@ -10,10 +9,8 @@ export interface FileProps {
 }
 
 export function File({ file }: FileProps) {
-  const { links } = useLinks(file.id);
-  console.log(links?.[0]);
-  const firstLink = links?.[0]
-    ? `${window.location.origin}/d/${links[0].token}`
+  const firstLink = file.links?.[0]
+    ? `${window.location.origin}/d/${file.links[0].token}`
     : `${window.location.origin}/d/no-link`;
 
   return (

@@ -22,4 +22,12 @@ dayjs.updateLocale("en", {
   },
 });
 
+export function toDatetimeLocal(iso: string | null): string {
+  return iso ? dayjs(iso).format("YYYY-MM-DDTHH:mm") : "";
+}
+
+export function fromDatetimeLocal(value: string): string | null {
+  return value === "" ? null : dayjs(value).toISOString();
+}
+
 export default dayjs;

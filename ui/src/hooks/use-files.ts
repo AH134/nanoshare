@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { getFiles, uploadFile } from "#/services/file";
-import { createLink, type LinkPayload } from "#/services/link";
+import type { LinkPayload } from "#/services/link";
 import { linkQueryOptions } from "./use-links";
 
 export const fileQueryOptions = queryOptions({
@@ -18,17 +18,13 @@ export function useFiles() {
   const { data: files, isLoading } = useQuery(fileQueryOptions);
 
   const uploadMutation = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       file,
       linkOptions,
     }: {
       file: File;
       linkOptions: LinkPayload;
-    }) => {
-      const uploadedFile = await uploadFile(file);
-      await createLink(uploadedFile.id, linkOptions);
-      return uploadedFile;
-    },
+    }) => uploadFile(file, linkOptions),
     onSuccess: (uploadedFile) => {
       queryClient.invalidateQueries({ queryKey: fileQueryOptions.queryKey });
       queryClient.invalidateQueries({
