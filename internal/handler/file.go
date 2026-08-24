@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/AH134/nanoshare/internal/database"
 	"github.com/AH134/nanoshare/internal/response"
@@ -65,6 +68,25 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	var linkOptions LinkRequest
+	if lo := r.FormValue("linkOptions"); lo != "" {
+		if err := json.Unmarshal([]byte(lo), &linkOptions); err != nil {
+			h.logger.Warn("invalid linkOptions payload", "error", err)
+
+			errMsg := fmt.Sprintf("Failed to parse link options. Max downloads needs to be an integer value (or unlimited) and date needs to be before %s", time.Now().Format(time.DateTime))
+			validationErrors := map[string]string{
+				"max_downloads": "Must be a valie integer value or leave it blank for unlimited.",
+				"expires_at":    fmt.Sprintf("Must be a date before %s", time.Now()),
+			}
+			response.Error(w, http.StatusBadRequest, response.APIError{
+				Code:    "INVALID_LINK_OPTIONS",
+				Message: errMsg,
+				Fields:  validationErrors,
+			})
+			return
+		}
+	}
+
 	storageKey, err := token.Generate(token.DefaultLength)
 	if err != nil {
 		response.InternalError(w, h.logger, "failed to generate token for file", err)
@@ -95,13 +117,50 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// remove from storage if failed to save to db
 		if delErr := h.storage.Delete(r.Context(), storageKey); delErr != nil {
-			h.logger.Error("failed to clean up orphaned file", "storage_key", storageKey, "file", file, "error", err)
+			h.logger.Error("failed to clean up orphaned file", "storage_key", storageKey, "file", file, "error", delErr)
 		}
 
 		response.InternalError(w, h.logger, "failed to save file to database", err)
 		return
 	}
 
+	var maxDownloads database.Nullable[int64]
+	if linkOptions.MaxDownloads != nil {
+		maxDownloads.Valid = true
+		maxDownloads.V = *linkOptions.MaxDownloads
+	}
+
+	var expiresAt database.Nullable[time.Time]
+	if linkOptions.ExpiresAt != nil {
+		expiresAt.Valid = true
+		expiresAt.V = *linkOptions.ExpiresAt
+
+	}
+
+	linkToken, err := token.Generate(token.DefaultLength)
+	if err != nil {
+		response.InternalError(w, h.logger, "failed to generate token for file", err)
+		return
+	}
+
+	link, err := h.links.Create(database.Link{
+		FileID:       uploadedFile.ID,
+		Token:        linkToken,
+		MaxDownloads: maxDownloads,
+		ExpiresAt:    expiresAt,
+	})
+	if err != nil {
+		if delErr := h.files.DeleteByID(uploadedFile.ID); delErr != nil {
+			h.logger.Error("failed to clean up orphaned file from database", "file_id", uploadedFile.ID, "error", delErr)
+		}
+		if delErr := h.storage.Delete(r.Context(), storageKey); delErr != nil {
+			h.logger.Error("failed to clean up orphaned storage object", "storage_key", storageKey, "error", delErr)
+		}
+		response.InternalError(w, h.logger, "failed to create link", err)
+		return
+	}
+
+	uploadedFile.Links = append(uploadedFile.Links, *link)
 	response.Success(w, http.StatusCreated, uploadedFile)
 }
 

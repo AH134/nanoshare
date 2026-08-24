@@ -85,6 +85,29 @@ func (r *FileRepository) GetByID(id int64) (*UploadedFile, error) {
 	return &file, nil
 }
 
+func (r *FileRepository) DeleteByID(id int64) error {
+	query := `
+	DELTED FROM files
+	WHERE id = ?
+	`
+
+	result, err := r.db.Conn().Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("deleting file: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("gettings rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("finding file: %w", err)
+	}
+
+	return nil
+}
+
 func (r *FileRepository) GetAllByOwnerID(ownerID int64) ([]UploadedFile, error) {
 	query := `
 		SELECT id, owner_id, original_filename, storage_key, size_bytes, mime_type, uploaded_at
