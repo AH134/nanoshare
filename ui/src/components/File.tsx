@@ -30,14 +30,13 @@ export function File({ file }: FileProps) {
         <FileText className="size-4 text-primary" />
       </div>
       <div>
-        <div>
-          {file.originalFilename}
-          {file.mimeType}
-        </div>
+        <p>{file.originalFilename}</p>
         <div className="flex items-center gap-1 text-xs text-base-content/60">
           <span>{prettyBytes(file.sizeBytes, { binary: true })}</span>
           <span>·</span>
           <span>{dayjs(file.uploadedAt).fromNow()}</span>
+          <span>·</span>
+          <span>{file.mimeType}</span>
         </div>
       </div>
       <div className="flex gap-1">

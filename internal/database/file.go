@@ -131,6 +131,7 @@ func (r *FileRepository) GetAllByOwnerID(ownerID int64) ([]UploadedFile, error) 
 		SELECT id, owner_id, original_filename, storage_key, size_bytes, mime_type, uploaded_at
 		FROM files
 		WHERE owner_id = ?
+		ORDER BY uploaded_at DESC
 	`
 
 	rows, err := r.db.Conn().Query(query, ownerID)

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { useMemo } from "react";
 import { File } from "#/components/File";
 import { PageTitle } from "#/components/PageTitle";
 import { UploadZone } from "#/components/UploadZone";
@@ -11,7 +12,11 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function RouteComponent() {
   const { files, isLoading } = useFiles();
-  const recentFiles = files?.slice(-10).reverse() || [];
+  const recentFiles = useMemo(() => {
+    if (!files) return [];
+
+    return files.slice(0, 5);
+  }, [files]);
 
   return (
     <div>
@@ -44,7 +49,7 @@ function RouteComponent() {
           </div>
         ) : (
           <ul className="list bg-base-100 rounded-box border border-base-300">
-            {recentFiles?.map((file) => (
+            {recentFiles.map((file) => (
               <File key={file.id} file={file} />
             ))}
           </ul>
