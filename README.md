@@ -109,6 +109,7 @@ services:
 | `STORAGE_PATH`   | Path were the uploaded files are stored     | `./data/storage/`     |
 | `PROD`           | Makes session cookies `Secure` (HTTPS only) | `false`               |
 
+> [!Warning]
 > **About `PROD`:** this controls whether session cookies are marked `Secure`. Leave it `false` for local, LAN, or plain-HTTP access. Set it to `true` once nanoshare is served over HTTPS (eg. behind a reverse-proxy such as Nginx, Caddy, Traefik).
 
 ### Building from Source
