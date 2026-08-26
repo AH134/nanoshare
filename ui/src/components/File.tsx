@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Files, FileText, Trash2 } from "lucide-react";
+import { FileText, Trash2 } from "lucide-react";
 import prettyBytes from "pretty-bytes";
 import { useFiles } from "#/hooks/use-files";
 import type { UploadedFile } from "#/services/file";
