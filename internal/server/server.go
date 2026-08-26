@@ -67,6 +67,7 @@ func (a *Application) Mount() http.Handler {
 
 	r.HandleFunc("POST /api/auth/login", authHandler.Login)
 	r.Handle("POST /api/auth/logout", requireAuth(http.HandlerFunc(authHandler.Logout)))
+	r.Handle("POST /api/auth/password", requireAuth(http.HandlerFunc(authHandler.ChangePassword)))
 
 	r.Handle("GET /api/files", requireAuth(http.HandlerFunc(fileHandler.List)))
 	r.Handle("POST /api/files", requireAuth(http.HandlerFunc(fileHandler.Upload)))

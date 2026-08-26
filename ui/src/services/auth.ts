@@ -11,6 +11,11 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export async function getMe(): Promise<User | null> {
   try {
     return await request<User>("/api/me");
@@ -20,7 +25,7 @@ export async function getMe(): Promise<User | null> {
 }
 
 export async function login(username: string, password: string): Promise<User> {
-  return await request<User>("/api/auth/login", {
+  return request<User>("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
@@ -28,5 +33,15 @@ export async function login(username: string, password: string): Promise<User> {
 }
 
 export async function logout(): Promise<void> {
-  await request<void>("/api/auth/logout", { method: "POST" });
+  return request<void>("/api/auth/logout", { method: "POST" });
+}
+
+export async function ChangePassword({
+  currentPassword,
+  newPassword,
+}: ChangePasswordPayload): Promise<void> {
+  return request<void>("/api/auth/password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
 }

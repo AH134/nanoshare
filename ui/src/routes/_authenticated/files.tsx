@@ -21,7 +21,6 @@ function RouteComponent() {
 
   const filteredFiles = useMemo(() => {
     if (!files) return [];
-    console.log(fileTypeFilter);
 
     let searchResult = files.filter((file) =>
       file.originalFilename.includes(searchQuery.toLowerCase()),
@@ -75,7 +74,7 @@ function RouteComponent() {
         title="Files"
         description={`${files ? files.length : 0} total file(s) · ${prettyBytes(totalBytes, { binary: true })}`}
       />
-      <div className="grid gap-2 grid-cols-[2fr_1fr_1fr_auto] mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 mb-4">
         <label className="input w-full">
           <Search className="size-4.5" />
           <input
@@ -86,7 +85,7 @@ function RouteComponent() {
           />
         </label>
         <select
-          className="select"
+          className="select w-full"
           value={fileTypeFilter}
           onChange={(e) => setFileTypeFilter(e.target.value as FileTypeFilter)}
         >
@@ -97,7 +96,7 @@ function RouteComponent() {
           <option value={"other"}>Others</option>
         </select>
         <select
-          className="select"
+          className="select w-full"
           value={sortFilter}
           onChange={(e) => setSortFilter(e.target.value as SortFilter)}
         >
@@ -109,7 +108,14 @@ function RouteComponent() {
         </select>
         <button
           type="button"
-          className="btn btn-neutral"
+          disabled={
+            !(
+              searchQuery !== "" ||
+              sortFilter !== "newest" ||
+              fileTypeFilter !== "all"
+            )
+          }
+          className="btn btn-soft btn-error"
           onClick={() => {
             setFileTypeFilter("all");
             setSortFilter("newest");

@@ -4,7 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { getMe, login, logout } from "#/services/auth";
+import { ChangePassword, getMe, login, logout } from "#/services/auth";
 
 export const authQueryOptions = queryOptions({
   queryKey: ["auth", "me"],
@@ -37,11 +37,19 @@ export function useAuth() {
     },
   });
 
+  const passwordMutation = useMutation({
+    mutationFn: ChangePassword,
+    onSuccess: () => {
+      queryClient.clear();
+    },
+  });
+
   return {
     user,
     isAuthenticated: !!user,
     isLoading,
     loginMutation,
     logoutMutation,
+    passwordMutation,
   };
 }

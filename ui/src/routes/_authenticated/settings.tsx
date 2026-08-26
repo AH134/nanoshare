@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ChangePasswordForm } from "#/components/ChangePasswordForm";
 import { PageTitle } from "#/components/PageTitle";
 import { SettingsCard } from "#/components/SettingsCard";
 import { ThemeToggle } from "#/components/ThemeToggle";
@@ -24,40 +25,7 @@ function RouteComponent() {
         </SettingsCard>
         {/* TODO: backend stuff */}
         <SettingsCard title="Account" description="Change your password.">
-          <form action="">
-            <fieldset className="fieldset">
-              <legend className="sr-only">Change password</legend>
-              <label
-                className="label text-base-content text-sm mt-2"
-                htmlFor="current-password"
-              >
-                Current Password
-              </label>
-              <input type="text" className="input w-full" placeholder="" />
-
-              <label
-                className="label text-base-content text-sm mt-2"
-                htmlFor="new-password"
-              >
-                New Password
-              </label>
-              <input type="text" className="input w-full" />
-
-              <label
-                className="label text-base-content text-sm mt-2"
-                htmlFor="confirm-password"
-              >
-                Confirm Password
-              </label>
-              <input type="text" className="input w-full" />
-              <button
-                type="submit"
-                className="btn btn-primary w-fit rounded mt-4"
-              >
-                Update password
-              </button>
-            </fieldset>
-          </form>
+          <ChangePasswordForm />
         </SettingsCard>
       </div>
     </div>

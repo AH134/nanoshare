@@ -19,6 +19,11 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
 type AuthResponse struct {
 	ID        int64     `json:"id"`
 	Username  string    `json:"username"`
@@ -89,6 +94,60 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	if err := h.sessionManager.Destroy(r.Context()); err != nil {
+		response.InternalError(w, h.logger, "failed to destroy session token", err)
+		return
+	}
+
+	response.Success(w, http.StatusOK, struct{}{})
+}
+
+func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	var req ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Warn("failed to decode change password request body", "error", err)
+		response.Error(w, http.StatusBadRequest, response.APIError{
+			Code:    "BAD_REQUEST",
+			Message: "Invalid JSON payload.",
+		})
+		return
+	}
+
+	userID := h.sessionManager.GetInt64(r.Context(), session.DefaultUserIDKey)
+	user, err := h.users.GetByID(userID)
+	if errors.Is(err, database.ErrNotFound) {
+		h.logger.Warn("user not found", "user_id", userID, "error", err)
+		response.Error(w, http.StatusNotFound, response.APIError{
+			Code:    "USER_NOT_FOUND",
+			Message: "User does not exist.",
+		})
+		return
+	}
+	if err != nil {
+		response.InternalError(w, h.logger, "failed to get user", err)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+		h.logger.Warn("password mismatch", "username", user.Username, "error", err)
+		response.Error(w, http.StatusUnauthorized, response.APIError{
+			Code:    "INVALID_CREDENTIALS",
+			Message: "Invalid password.",
+		})
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		response.InternalError(w, h.logger, "failed to generate password hash", err)
+		return
+	}
+
+	if err := h.users.UpdatePassword(user.ID, string(hash)); err != nil {
+		response.InternalError(w, h.logger, "failed to update user password", err)
+		return
+	}
+
 	if err := h.sessionManager.Destroy(r.Context()); err != nil {
 		response.InternalError(w, h.logger, "failed to destroy session token", err)
 		return

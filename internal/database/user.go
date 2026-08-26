@@ -75,6 +75,29 @@ func (r *UserRepository) GetByID(id int64) (*User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) UpdatePassword(id int64, passwordHash string) error {
+	query := `
+		UPDATE users
+		SET password_hash = ?
+		WHERE id = ?
+	`
+	result, err := r.db.Conn().Exec(query, passwordHash, id)
+	if err != nil {
+		return fmt.Errorf("changing password: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("getting rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("finding user: %w", err)
+	}
+
+	return nil
+}
+
 func (r *UserRepository) CreateAdmin(username, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
