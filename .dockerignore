@@ -10,6 +10,7 @@ tmp
 *.test
 *.out
 nanoshare
+/bin
 
 # go air
 .air.toml
@@ -22,6 +23,7 @@ ui/.tanstack
 # docs
 *.md
 README*
+/assets
 
 # env
 .env

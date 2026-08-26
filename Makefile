@@ -2,6 +2,10 @@ include .env
 export
 .PHONY: dev-backend dev-frontend clean migrate-up migrate-down create-admin reset-db
 
+build:
+	npm --prefix ui run build
+	go build -o ./bin/nanoshare ./cmd/nanoshare
+
 dev-backend:
 	air
 

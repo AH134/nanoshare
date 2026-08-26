@@ -22,7 +22,7 @@ func Load() (*EnvConfig, error) {
 		Port:          getEnv("PORT", "8080"),
 		DbPath:        getEnv("DB_PATH", "./data/nanoshare.db"),
 		StoragePath:   getEnv("STORAGE_PATH", "./data/storage"),
-		Prod:          getEnvBool("PROD", true),
+		Prod:          getEnvBool("PROD", false),
 	}
 
 	if cfg.AdminUsername == "" || cfg.AdminPassword == "" {
