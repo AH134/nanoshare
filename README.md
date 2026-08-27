@@ -39,8 +39,6 @@ services:
     image: xw134/nanoshare:latest
     ports:
       - "8080:8080"
-    env_file:
-      - .env
     environment:
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: admin
