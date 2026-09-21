@@ -43,12 +43,16 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	// limit memory usage to 32mb
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		h.logger.Warn("failed to parse multipart form", "error", err)
+		if r.MultipartForm != nil {
+			r.MultipartForm.RemoveAll()
+		}
 		response.Error(w, http.StatusBadRequest, response.APIError{
 			Code:    "INVALID_MULTIPART_FORM",
 			Message: "Failed to process the uploaded form data.",
 		})
 		return
 	}
+	defer r.MultipartForm.RemoveAll()
 
 	file, fileHeader, err := r.FormFile(DefaultFileKey)
 	if errors.Is(err, http.ErrMissingFile) {
@@ -76,7 +80,7 @@ func (h *FileHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 			errMsg := fmt.Sprintf("Failed to parse link options. Max downloads needs to be an integer value (or unlimited) and date needs to be before %s", time.Now().Format(time.DateTime))
 			validationErrors := map[string]string{
-				"max_downloads": "Must be a valie integer value or leave it blank for unlimited.",
+				"max_downloads": "Must be a valid integer value or leave it blank for unlimited.",
 				"expires_at":    fmt.Sprintf("Must be a date before %s", time.Now()),
 			}
 			response.Error(w, http.StatusBadRequest, response.APIError{

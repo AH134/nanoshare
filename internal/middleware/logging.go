@@ -16,6 +16,17 @@ func (w *wrappedWriter) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
 }
 
+func (w *wrappedWriter) Write(b []byte) (int, error) {
+	if w.statusCode == 0 {
+		w.statusCode = http.StatusOK
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *wrappedWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
 func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
 	logger = logger.With("middleware", "logging")
 	return func(next http.Handler) http.Handler {

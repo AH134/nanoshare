@@ -164,6 +164,11 @@ func (h *LinkHandler) Download(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", file.MimeType)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
+	rc := http.NewResponseController(w)
+	if err := rc.SetWriteDeadline(time.Time{}); err != nil {
+		h.logger.Warn("failed to clear write dealine for download", "error", err)
+	}
+
 	seeker, ok := storageFile.(io.ReadSeeker)
 	if !ok {
 		response.InternalError(w, h.logger, "stream does not support seeking", err)
