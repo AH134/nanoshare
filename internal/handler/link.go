@@ -158,7 +158,7 @@ func (h *LinkHandler) Download(w http.ResponseWriter, r *http.Request) {
 	defer storageFile.Close()
 
 	escapedFilename := url.PathEscape(file.OriginalFilename)
-	dispositionValue := fmt.Sprintf("attachment; filename=\"fallback.bin\"; filename*=UTF-8''%s", escapedFilename)
+	dispositionValue := fmt.Sprintf("inline; filename=\"fallback.bin\"; filename*=UTF-8''%s", escapedFilename)
 
 	w.Header().Set("Content-Disposition", dispositionValue)
 	w.Header().Set("Content-Type", file.MimeType)
@@ -179,5 +179,5 @@ func (h *LinkHandler) Download(w http.ResponseWriter, r *http.Request) {
 		h.logger.Warn("failed to increment download count", "link_id", link.ID, "error", err)
 	}
 
-	http.ServeContent(w, r, "", time.Now(), seeker)
+	http.ServeContent(w, r, file.OriginalFilename, time.Now(), seeker)
 }
