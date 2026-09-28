@@ -10,6 +10,8 @@
 
 Drag and drop your files, set a max download count and expiry date and get a shareable link for sharing.
 
+![Demo](assets/demo.gif)
+
 ## Getting Started
 
 ### Docker
